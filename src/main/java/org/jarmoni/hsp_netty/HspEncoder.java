@@ -5,9 +5,11 @@ import java.util.List;
 import org.jarmoni.hsp_netty.Messages.HspMessage;
 
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
+@ChannelHandler.Sharable
 public class HspEncoder extends MessageToMessageEncoder<HspMessage> {
 
 	@Override
