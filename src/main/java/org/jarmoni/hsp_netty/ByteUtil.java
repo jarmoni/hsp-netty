@@ -51,4 +51,14 @@ public class ByteUtil {
 		}
 		return result;
 	}
+	
+	public static byte[] append(byte[] bytes, byte appender) {
+		return concat(bytes, new byte[]{ appender });
+	}
+	
+	public static byte[] subArray(byte[] bytes, int from, int to) {
+		byte[] dest = new byte[to-from];
+		System.arraycopy(bytes, from, dest, 0, dest.length);
+		return dest;
+	}
 }

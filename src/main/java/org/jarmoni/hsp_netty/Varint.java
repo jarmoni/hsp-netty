@@ -1,5 +1,7 @@
 package org.jarmoni.hsp_netty;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import javax.xml.bind.DatatypeConverter;
@@ -7,7 +9,10 @@ import javax.xml.bind.DatatypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBuf;
+
 import static org.jarmoni.hsp_netty.ByteUtil.*;
+import static org.jarmoni.hsp_netty.Varint.unsignedIntFromVarint;
 public class Varint {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Varint.class);
@@ -35,9 +40,9 @@ public class Varint {
 		return res;
 	}
 	
-	//TODO Implement this for message-ID's
+	
 	public static byte[] bytesFromVarint(byte[] varint) {
-		byte[] dest = new byte[0];
+		List<Byte> res = new ArrayList<>();
 		return null;
 	}
 
@@ -59,11 +64,38 @@ public class Varint {
 		// Set MSB to '0' (indicates last byte of varint)
 		return concat(dest, new byte[] { (byte)(x & 0x7F)});
 	}
+	
+	public static Optional<Integer> parseVarintBytes(ByteBuf buffer, int maxVarintBytes) {
+		Optional<byte[]> varintBytes = getVarintBytes(buffer, maxVarintBytes);
+		if(varintBytes.isPresent())
+			return Optional.of(unsignedIntFromVarint(varintBytes.get()));
+		return Optional.empty();
+	}
+	
+	
+	public static Optional<byte[]> getVarintBytes(ByteBuf buffer, int maxVarintBytes) {
+		int count = 0;
+		byte[] varintBytes = new byte[0];
+		byte currentByte = Byte.MIN_VALUE;
+		do {
+			count +=1;
+			if(count > maxVarintBytes) {
+				LOG.error("Number of varint-bytes={} exceeds maximum={}", count, maxVarintBytes);
+				return Optional.empty();
+			}
+			currentByte = buffer.readByte();
+			varintBytes = append(varintBytes, currentByte);
+		} while ((currentByte & 0x80) != 0);
+		return Optional.of(varintBytes);
+	}
 
 
-	public static int calcRequiredVarintBits(int maxResultBytes) {
-		int ceil = (int)Math.ceil(maxResultBytes * 8 / 7);
-		int maxVarintBytes = maxResultBytes * 8 % 7 == 0 ? ceil : ceil+1;
-		return maxVarintBytes * 8;
+	/**
+	 * Maximum number of bytes required to encode an array of given length 
+	 * @param maxResultBytes
+	 * @return
+	 */
+	public static int calcRequiredVarintBytes(int inputByteLength) {
+		return (int)Math.ceil(inputByteLength * 8 / 7d);
 	}
 }
