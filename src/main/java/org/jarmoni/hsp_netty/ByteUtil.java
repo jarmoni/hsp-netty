@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 
 import javax.xml.bind.DatatypeConverter;
 
+import io.netty.buffer.ByteBuf;
+
 public class ByteUtil {
 
 	public static String hexStringFromBytes(byte[] bytes) {
@@ -12,6 +14,14 @@ public class ByteUtil {
 
 	public static byte[] bytesFromHexString(String hex) {
 		return DatatypeConverter.parseHexBinary(hex);
+	}
+	
+	public static byte[] readableBytesFromByteBuf(ByteBuf buf) {
+		if(buf.hasArray())
+			return buf.array();
+		byte[] array = new byte[buf.readableBytes()];
+		buf.getBytes(buf.readerIndex(), array);
+		return array;
 	}
 
 	public static int unsignedIntFromBytes(byte[] bytes) {
@@ -52,8 +62,11 @@ public class ByteUtil {
 		return result;
 	}
 	
-	public static byte[] append(byte[] bytes, byte appender) {
-		return concat(bytes, new byte[]{ appender });
+	public static byte[] append(byte[] bytes, byte... appender) {
+		if(appender.length == 0) {
+			return bytes;
+		}
+		return concat(bytes, appender);
 	}
 	
 	public static byte[] subArray(byte[] bytes, int from, int to) {

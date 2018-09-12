@@ -42,6 +42,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 
 	@Override
 	protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> out) throws Exception {
+		LOG.debug("Receiving bytes...");
 		DecoderState currentState = state();
 		switch (currentState) {
 		case READ_COMMAND: {
@@ -71,7 +72,6 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		default:
 			stateError("Unknown state=" + currentState);
 		}
-
 	}
 
 	private void readCommand(ByteBuf buffer, List<Object> out) {

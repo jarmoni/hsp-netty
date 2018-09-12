@@ -1,7 +1,9 @@
 package org.jarmoni.hsp_netty;
 
-import java.util.ArrayList;
-import java.util.List;
+import static org.jarmoni.hsp_netty.ByteUtil.append;
+import static org.jarmoni.hsp_netty.ByteUtil.concat;
+
+import java.math.BigInteger;
 import java.util.Optional;
 
 import javax.xml.bind.DatatypeConverter;
@@ -10,13 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
-
-import static org.jarmoni.hsp_netty.ByteUtil.*;
-import static org.jarmoni.hsp_netty.Varint.unsignedIntFromVarint;
 public class Varint {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Varint.class);
-
+	
 	/**
 	 * Decodes Byte-Array as Int. Int is treated 'unsigned' so it is strongly
 	 * discouraged to use the 'int-value' for any operations. Bit-operations are
@@ -41,12 +40,6 @@ public class Varint {
 	}
 	
 	
-	public static byte[] bytesFromVarint(byte[] varint) {
-		List<Byte> res = new ArrayList<>();
-		return null;
-	}
-
-
 	/** Encodes given Int as Byte-Array. Int is treated 'unsigned' */
 	public static byte[] varintFromUnsignedInt(int in) {
 		int x = in;
