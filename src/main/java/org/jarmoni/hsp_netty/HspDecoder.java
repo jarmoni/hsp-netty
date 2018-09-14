@@ -5,6 +5,7 @@ import static org.jarmoni.hsp_netty.Varint.getVarintBytes;
 import static org.jarmoni.hsp_netty.Varint.parseVarintBytes;
 import static org.jarmoni.hsp_netty.Messages.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,24 +22,37 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	private static final Logger LOG = LoggerFactory.getLogger(HspDecoder.class);
 	
 	private static final int MAX_PAYLOAD_BYTES_DEFAULT = 8192;
+	// if List of types is given (via constructor), type of message can be validated ("fail fast"). If not
+	// given, no validation will be performed
+	private static final List<Integer> KNOWN_TYPES_DEFAULT = Collections.emptyList();
 	private final int maxVarintBytes = calcRequiredVarintBytes(4);
 	private final int maxMessageIdVarintBytes = calcRequiredVarintBytes(16);
 	private final int maxPayloadBytes;
+	private final List<Integer> knownTypes;
 	private CurrentFields currentFields;
 
 	public HspDecoder() {
 		this(MAX_PAYLOAD_BYTES_DEFAULT);
 	}
 	
+	public HspDecoder(List<Integer> knownTypes) {
+		this(MAX_PAYLOAD_BYTES_DEFAULT);
+	}
+	
 	public HspDecoder(int maxPayloadBytes) {
-		this(DecoderState.READ_COMMAND, maxPayloadBytes);
+		this(DecoderState.READ_COMMAND, maxPayloadBytes, KNOWN_TYPES_DEFAULT);
+	}
+	
+	public HspDecoder(int maxPayloadBytes, List<Integer> knownTypes) {
+		this(DecoderState.READ_COMMAND, maxPayloadBytes, knownTypes);
 	}
 
-	public HspDecoder(DecoderState startState, int maxPayloadBytes) {
+	public HspDecoder(DecoderState startState, int maxPayloadBytes, List<Integer> knownTypes) {
 		super(startState);
 		this.maxPayloadBytes = maxPayloadBytes;
 		this.currentFields = new CurrentFields();
-		LOG.debug("Initialized with startState={}, maxPayloadBytes={}", startState, maxPayloadBytes);
+		this.knownTypes = knownTypes;
+		LOG.debug("Initialized with startState={}, maxPayloadBytes={}, knownTypes={}", startState, maxPayloadBytes, knownTypes);
 	}
 
 	@Override
@@ -126,6 +140,9 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		if (!typeOpt.isPresent()) {
 			stateError(EX_VARINT_PARSE_ERROR, "Parsing of (type-) Varint failed");
 			return;
+		}
+		if(!knownTypes.isEmpty() && !knownTypes.contains(typeOpt.get())) {
+			stateError(EX_INVALID_TYPE, "Invalid type=" + typeOpt.get());
 		}
 		currentFields.type = typeOpt;
 		readPayloadLength(buffer, out);
@@ -298,19 +315,23 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	}
 	
 	// Decoder-state does exist, but is not handled in decoder (obviously bug)
-	private static final HspDecoderException EX_UNHANDLED_DECODER_STATE = new HspDecoderException("Unhandled decoder-state");
+	public static final HspDecoderException EX_UNHANDLED_DECODER_STATE = new HspDecoderException("Unhandled decoder-state");
 	// Varint could not be parsed
-	private static final HspDecoderException EX_VARINT_PARSE_ERROR = new HspDecoderException("Varint parse-error");
+	public static final HspDecoderException EX_VARINT_PARSE_ERROR = new HspDecoderException("Varint parse-error");
 	// Command does not exist
-	private static final HspDecoderException EX_INVALID_COMMAND = new HspDecoderException("Invalid command");
+	public static final HspDecoderException EX_INVALID_COMMAND = new HspDecoderException("Invalid command");
 	// Command does exist but is not handled in decoder (obviously bug)
-	private static final HspDecoderException EX_UNHANDLED_COMMAND = new HspDecoderException("Unhandled command");
+	public static final HspDecoderException EX_UNHANDLED_COMMAND = new HspDecoderException("Unhandled command");
 	// Command does exist but is not handled in decoder (obviously bug)
-	private static final HspDecoderException EX_MAX_LENGTH_EXCEEDED = new HspDecoderException("Max length exceeded");
+	public static final HspDecoderException EX_MAX_LENGTH_EXCEEDED = new HspDecoderException("Max length exceeded");
 	// One or more expected fields of HSP-message are not present
-	private static final HspDecoderException EX_MISSING_FIELDS = new HspDecoderException("Missing fields");
+	public static final HspDecoderException EX_MISSING_FIELDS = new HspDecoderException("Missing fields");
+	// Type does not exist
+	public static final HspDecoderException EX_INVALID_TYPE = new HspDecoderException("Invalid type");
 	
-	static class HspDecoderException extends RuntimeException {
+	public static class HspDecoderException extends RuntimeException {
+		private static final long serialVersionUID = -1382772990276005908L;
+
 		public HspDecoderException(String cause) {
 			super(cause);
 		}
