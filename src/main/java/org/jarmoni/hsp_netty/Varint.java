@@ -3,7 +3,6 @@ package org.jarmoni.hsp_netty;
 import static org.jarmoni.hsp_netty.ByteUtil.append;
 import static org.jarmoni.hsp_netty.ByteUtil.concat;
 
-import java.math.BigInteger;
 import java.util.Optional;
 
 import javax.xml.bind.DatatypeConverter;

@@ -10,9 +10,8 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
+import org.jarmoni.hsp_netty.HspDecoder.HspDecoderException;
 import org.jarmoni.hsp_netty.Messages.AckMessage;
 import org.jarmoni.hsp_netty.Messages.DataAckMessage;
 import org.jarmoni.hsp_netty.Messages.DataMessage;
@@ -24,9 +23,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -41,14 +37,14 @@ public class HspDecoderTest {
 	private final byte[] msgId = bytesFromHexString("F001");
 	private final byte[] payload = "xyz".getBytes(StandardCharsets.UTF_8);
 	
-	private Channel channel = mock(Channel.class);
-	private ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
+	private final Channel channel = mock(Channel.class);
+	private final ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
 	private HspDecoder decoder;
 	private java.util.List<Object> out;
 	
 	@Before
 	public void setUp() throws Exception {
-		decoder = new HspDecoder(createCodecConfig(true));
+		decoder = new HspDecoder();
 		out = new ArrayList<>();
 		when(ctx.channel()).thenReturn(channel);
 	}
@@ -63,6 +59,16 @@ public class HspDecoderTest {
 		assertThat(msg.getCommandType(), is(dataMessage.getCommandType()));
 		assertThat(msg.getType(), is(dataMessage.getType()));
 		assertThat(Arrays.hashCode(msg.getPayload()), is(Arrays.hashCode(dataMessage.getPayload())));
+	}
+	
+	
+	@Test
+	public void testDataCommandToDataMessageMessageTooBig() throws Exception {
+		final DataMessage dataMessage = new DataMessage(type, payload);
+		decoder = new HspDecoder(1);
+		ee.expect(HspDecoderException.class);
+		ee.expectMessage("Payload-length=3 exceeds max-payload-bytes=1");
+		decoder.decode(ctx, Unpooled.copiedBuffer(dataMessage.toBytes()), out);
 	}
 	
 	
@@ -104,7 +110,7 @@ public class HspDecoderTest {
 	}
 	
 	@Test
-	public void testPingCommandToPingMessageServerMode() throws Exception {
+	public void testPingCommandToPingMessage() throws Exception {
 		final PingMessage pingMessage = new PingMessage();
 		decoder.decode(ctx, Unpooled.copiedBuffer(pingMessage.toBytes()), out);
 		assertThat(out.size(), is(1));
@@ -113,26 +119,10 @@ public class HspDecoderTest {
 		assertThat(msg.getCommandType(), is(pingMessage.getCommandType()));
 	}
 	
-	@Test
-	public void testPingCommandToPingMessageClientMode() throws Exception {
-		decoder = new HspDecoder(createCodecConfig(false));
-		final PingMessage pingMessage = new PingMessage();
-		ee.expect(IllegalStateException.class);
-		ee.expectMessage("Started as client");
-		decoder.decode(ctx, Unpooled.copiedBuffer(pingMessage.toBytes()), out);
-	}
-	
-	@Test
-	public void testPongCommandToPongMessageServerMode() throws Exception {
-		final PongMessage pongMessage = new PongMessage();
-		ee.expect(IllegalStateException.class);
-		ee.expectMessage("Started as server");
-		decoder.decode(ctx, Unpooled.copiedBuffer(pongMessage.toBytes()), out);
-	}
 	
 	@Test
 	public void testPongCommandToPongMessageClientMode() throws Exception {
-		decoder = new HspDecoder(createCodecConfig(false));
+		decoder = new HspDecoder();
 		final PongMessage pongMessage = new PongMessage();
 		decoder.decode(ctx, Unpooled.copiedBuffer(pongMessage.toBytes()), out);
 		assertThat(out.size(), is(1));
@@ -151,11 +141,4 @@ public class HspDecoderTest {
 		assertThat(msg.getCommandType(), is(errorUndefMessage.getCommandType()));
 		assertThat(Arrays.hashCode(msg.getMessageId()), is(Arrays.hashCode(errorUndefMessage.getMessageId())));
 	}
-	
-	private Config createCodecConfig(boolean serverMode) {
-		final Map<String, Object> configMap = new HashMap<>();
-		configMap.put("server-mode", serverMode);
-		return ConfigFactory.parseMap(configMap).withFallback(ConfigFactory.load().getConfig("hsp.codec"));
-	}
-
 }

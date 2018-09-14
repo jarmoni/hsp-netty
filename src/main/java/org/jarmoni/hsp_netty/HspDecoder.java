@@ -12,8 +12,6 @@ import org.jarmoni.hsp_netty.Messages.HspCommandType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.typesafe.config.Config;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
@@ -21,23 +19,26 @@ import io.netty.handler.codec.ReplayingDecoder;
 public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HspDecoder.class);
-
+	
+	private static final int MAX_PAYLOAD_BYTES_DEFAULT = 8192;
 	private final int maxVarintBytes = calcRequiredVarintBytes(4);
 	private final int maxMessageIdVarintBytes = calcRequiredVarintBytes(16);
 	private final int maxPayloadBytes;
-	private final boolean serverMode;
 	private CurrentFields currentFields;
 
-	public HspDecoder(Config codecConfig) {
-		this(DecoderState.READ_COMMAND, codecConfig);
+	public HspDecoder() {
+		this(MAX_PAYLOAD_BYTES_DEFAULT);
+	}
+	
+	public HspDecoder(int maxPayloadBytes) {
+		this(DecoderState.READ_COMMAND, maxPayloadBytes);
 	}
 
-	public HspDecoder(DecoderState startState, Config codecConfig) {
+	public HspDecoder(DecoderState startState, int maxPayloadBytes) {
 		super(startState);
-		this.maxPayloadBytes = codecConfig.getInt("max-payload-bytes");
-		this.serverMode = codecConfig.getBoolean("server-mode");
+		this.maxPayloadBytes = maxPayloadBytes;
 		this.currentFields = new CurrentFields();
-		LOG.debug("Initialized with startState={}, config={}", startState, codecConfig);
+		LOG.debug("Initialized with startState={}, maxPayloadBytes={}", startState, maxPayloadBytes);
 	}
 
 	@Override
@@ -65,8 +66,8 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			readMessageId(buffer, out);
 			break;
 		}
-		case BAD_MESSAGE: {
-			handleBadMessage(buffer);
+		case STATE_ERROR: {
+			handleStateError(buffer);
 			break;
 		}
 		default:
@@ -77,7 +78,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	private void readCommand(ByteBuf buffer, List<Object> out) {
 		Optional<Integer> commandOpt = parseVarintBytes(buffer, maxVarintBytes);
 		if (!commandOpt.isPresent()) {
-			badMessage("Parsing of (command-) Varint failed");
+			stateError("Parsing of (command-) Varint failed");
 			return;
 		}
 		Optional<HspCommandType> cmdTypeOpt = HspCommandType.byValue(commandOpt.get());
@@ -99,17 +100,11 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			break;
 		}
 		case PingCommand: {
-			if (!serverMode)
-				stateError("Started as client and don't expect receiving PINGs");
-			else
-				pushMessage(out);
+			pushMessage(out);
 			break;
 		}
 		case PongCommand: {
-			if (serverMode)
-				stateError("Started as server and don't expect receiving PONGs");
-			else
-				pushMessage(out);
+			pushMessage(out);
 			break;
 		}
 		case ErrorCommand: {
@@ -129,7 +124,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		checkpoint(DecoderState.READ_TYPE);
 		Optional<Integer> typeOpt = parseVarintBytes(buffer, maxVarintBytes);
 		if (!typeOpt.isPresent()) {
-			badMessage("Parsing of (type-) Varint failed");
+			stateError("Parsing of (type-) Varint failed");
 			return;
 		}
 		currentFields.type = typeOpt;
@@ -140,12 +135,12 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		checkpoint(DecoderState.READ_PAYLOAD_LENGTH);
 		Optional<Integer> payloadLengthOpt = parseVarintBytes(buffer, maxVarintBytes);
 		if (!payloadLengthOpt.isPresent()) {
-			badMessage("Parsing of (payload-length-) Varint failed");
+			stateError("Parsing of (payload-length-) Varint failed");
 			return;
 		}
 		int payloadLength = payloadLengthOpt.get();
 		if (payloadLength > maxPayloadBytes) {
-			badMessage("Payload-length=" + payloadLength + " exceeds max-payload-bytes=" + maxPayloadBytes);
+			stateError("Payload-length=" + payloadLength + " exceeds max-payload-bytes=" + maxPayloadBytes);
 			return;
 		}
 		if (payloadLength == 0) {
@@ -173,7 +168,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		checkpoint(DecoderState.READ_MESSAGE_ID);
 		Optional<byte[]> messageIdOpt = getVarintBytes(buffer, maxMessageIdVarintBytes);
 		if (!messageIdOpt.isPresent()) {
-			badMessage("Reading of messageId failed");
+			stateError("Reading of messageId failed");
 			return;
 		}
 		currentFields.messageId = messageIdOpt;
@@ -274,23 +269,18 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		out.add(new ErrorUndefMessage(currentFields.messageId.get()));
 	}
 
-	private void badMessage(String message) {
+	private void stateError(String message) {
 		LOG.error(message);
 		resetCurrentFields();
-		checkpoint(DecoderState.BAD_MESSAGE);
-	}
-
-	private void stateError(String message) {
-		// TODO How to handle error?
-		resetCurrentFields();
-		throw new IllegalStateException(message);
+		checkpoint(DecoderState.STATE_ERROR);
+		throw new HspDecoderException(message);
 	}
 
 	private void resetCurrentFields() {
 		this.currentFields = new CurrentFields();
 	}
 
-	private void handleBadMessage(ByteBuf buffer) {
+	private void handleStateError(ByteBuf buffer) {
 		// Keep discarding until disconnection
 		buffer.skipBytes(actualReadableBytes());
 	}
@@ -304,6 +294,12 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	}
 
 	enum DecoderState {
-		READ_COMMAND, READ_TYPE, READ_MESSAGE_ID, READ_PAYLOAD_LENGTH, READ_PAYLOAD, BAD_MESSAGE
+		READ_COMMAND, READ_TYPE, READ_MESSAGE_ID, READ_PAYLOAD_LENGTH, READ_PAYLOAD, STATE_ERROR
+	}
+	
+	static class HspDecoderException extends RuntimeException {
+		public HspDecoderException(String cause) {
+			super(cause);
+		}
 	}
 }
