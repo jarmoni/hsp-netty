@@ -11,17 +11,19 @@ import io.netty.handler.codec.MessageToByteEncoder;
 
 @ChannelHandler.Sharable
 public class HspEncoder extends MessageToByteEncoder<HspMessage> {
-	
+
 	private static final Logger LOG = LoggerFactory.getLogger(HspEncoder.class);
-	
+
 	private static final HspEncoder INSTANCE = new HspEncoder();
 
 	@Override
 	protected void encode(ChannelHandlerContext ctx, HspMessage msg, ByteBuf out) throws Exception {
 		LOG.debug("Receiving bytes...");
-		byte[] bytes = msg.toBytes();
+		final byte[] bytes = msg.toBytes();
 		out.writeBytes(bytes);
 	}
-	
-	public static HspEncoder instance() { return INSTANCE; }
+
+	public static HspEncoder instance() {
+		return INSTANCE;
+	}
 }
