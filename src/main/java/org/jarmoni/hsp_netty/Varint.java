@@ -16,12 +16,12 @@ public class Varint {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Varint.class);
 
-	/**
+	/*
 	 * Decodes Byte-Array as Int. Int is treated 'unsigned' so it is strongly
 	 * discouraged to use the 'int-value' for any operations. Bit-operations are
 	 * allowed though.
 	 */
-	public static int unsignedIntFromVarint(byte[] varint) {
+	public static int unsignedIntFromVarint(final byte[] varint) {
 		int bits = 0;
 		int res = 0;
 		int current = 0;
@@ -40,8 +40,8 @@ public class Varint {
 		return res;
 	}
 
-	/** Encodes given Int as Byte-Array. Int is treated 'unsigned' */
-	public static byte[] varintFromUnsignedInt(int in) {
+	/* Encodes given Int as Byte-Array. Int is treated 'unsigned' */
+	public static byte[] varintFromUnsignedInt(final int in) {
 		int x = in;
 		byte[] dest = new byte[0];
 		// As long as payload-bits are available (=7)
@@ -58,14 +58,14 @@ public class Varint {
 		return concat(dest, new byte[] { (byte) (x & 0x7F) });
 	}
 
-	public static Optional<Integer> parseVarintBytes(ByteBuf buffer, int maxVarintBytes) {
+	public static Optional<Integer> parseVarintBytes(final ByteBuf buffer, final int maxVarintBytes) {
 		final Optional<byte[]> varintBytes = getVarintBytes(buffer, maxVarintBytes);
 		if (varintBytes.isPresent())
 			return Optional.of(unsignedIntFromVarint(varintBytes.get()));
 		return Optional.empty();
 	}
 
-	public static Optional<byte[]> getVarintBytes(ByteBuf buffer, int maxVarintBytes) {
+	public static Optional<byte[]> getVarintBytes(final ByteBuf buffer, final int maxVarintBytes) {
 		int count = 0;
 		byte[] varintBytes = new byte[0];
 		byte currentByte = Byte.MIN_VALUE;
@@ -81,13 +81,10 @@ public class Varint {
 		return Optional.of(varintBytes);
 	}
 
-	/**
+	/*
 	 * Maximum number of bytes required to encode an array of given length
-	 * 
-	 * @param maxResultBytes
-	 * @return
 	 */
-	public static int calcRequiredVarintBytes(int inputByteLength) {
+	public static int calcRequiredVarintBytes(final int inputByteLength) {
 		return (int) Math.ceil(inputByteLength * 8 / 7d);
 	}
 }
