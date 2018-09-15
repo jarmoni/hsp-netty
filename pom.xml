@@ -7,7 +7,7 @@
 	<artifactId>hsp-netty</artifactId>
 	<version>0.1.0-SNAPSHOT</version>
 	<name>${project.artifactId}</name>
-	<description>Kafka-connectivity for MQTT-devices in both directions</description>
+	<description>HSP implementation in Java</description>
 	<url>https://github.com/dcsolutions/kalinka</url>
 
 	<organization>
