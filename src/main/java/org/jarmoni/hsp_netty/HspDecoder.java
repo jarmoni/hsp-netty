@@ -6,18 +6,18 @@ import static org.jarmoni.hsp_netty.Varint.parseVarintBytes;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.jarmoni.hsp_netty.Messages.AckMessage;
 import org.jarmoni.hsp_netty.Messages.DataAckMessage;
 import org.jarmoni.hsp_netty.Messages.DataMessage;
 import org.jarmoni.hsp_netty.Messages.ErrorMessage;
 import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
-import org.jarmoni.hsp_netty.Messages.HspCommandType;
 import org.jarmoni.hsp_netty.Messages.PingMessage;
 import org.jarmoni.hsp_netty.Messages.PongMessage;
-import org.jarmoni.hsp_netty.Messages.Type;
+import org.jarmoni.hsp_netty.Types.HspCommandType;
+import org.jarmoni.hsp_netty.Types.HspPayloadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,18 +33,18 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	// if List of types is given (via constructor), type of message can be
 	// validated ("fail fast"). If not
 	// given, no validation will be performed
-	private static final Set<Type> KNOWN_TYPES_DEFAULT = Collections.emptySet();
+	private static final Map<Integer, HspPayloadType> KNOWN_TYPES_DEFAULT = Collections.emptyMap();
 	private final int maxVarintBytes = calcRequiredVarintBytes(4);
 	private final int maxMessageIdVarintBytes = calcRequiredVarintBytes(16);
 	private final int maxPayloadBytes;
-	private final Set<Type> knownTypes;
+	private final Map<Integer, HspPayloadType> knownTypes;
 	private CurrentFields currentFields;
 
 	public HspDecoder() {
 		this(MAX_PAYLOAD_BYTES_DEFAULT);
 	}
 
-	public HspDecoder(final Set<Type> knownTypes) {
+	public HspDecoder(final Map<Integer, HspPayloadType> knownTypes) {
 		this(MAX_PAYLOAD_BYTES_DEFAULT);
 	}
 
@@ -52,11 +52,11 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		this(DecoderState.READ_COMMAND, maxPayloadBytes, KNOWN_TYPES_DEFAULT);
 	}
 
-	public HspDecoder(final int maxPayloadBytes, final Set<Type> knownTypes) {
+	public HspDecoder(final int maxPayloadBytes, final Map<Integer, HspPayloadType> knownTypes) {
 		this(DecoderState.READ_COMMAND, maxPayloadBytes, knownTypes);
 	}
 
-	public HspDecoder(final DecoderState startState, final int maxPayloadBytes, final Set<Type> knownTypes) {
+	public HspDecoder(final DecoderState startState, final int maxPayloadBytes, final Map<Integer, HspPayloadType> knownTypes) {
 		super(startState);
 		this.maxPayloadBytes = maxPayloadBytes;
 		this.currentFields = new CurrentFields();
@@ -150,7 +150,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			stateError(EX_VARINT_PARSE_ERROR, "Parsing of (type-) Varint failed");
 			return;
 		}
-		if (!knownTypes.isEmpty() && !knownTypes.contains(typeOpt.get())) {
+		if (!knownTypes.isEmpty() && !knownTypes.containsKey(typeOpt.get())) {
 			stateError(EX_INVALID_TYPE, "Invalid type=" + typeOpt.get());
 		}
 		currentFields.type = typeOpt;
