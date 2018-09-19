@@ -10,8 +10,7 @@ import java.util.Optional;
 public class Messages {
 
 	public enum HspCommandType {
-		DataCommand(0), DataAckCommand(1), AckCommand(2), ErrorCommand(3), PingCommand(4), PongCommand(
-				5), ErrorUndefCommand(6);
+		DataCommand(0), DataAckCommand(1), AckCommand(2), ErrorCommand(3), PingCommand(4), PongCommand(5), ErrorUndefCommand(6);
 
 		private static final Map<Integer, HspCommandType> ELEM_MAP = new HashMap<>();
 		static {
@@ -22,7 +21,7 @@ public class Messages {
 
 		private final int value;
 
-		private HspCommandType(int value) {
+		private HspCommandType(final int value) {
 			this.value = value;
 		}
 
@@ -30,7 +29,7 @@ public class Messages {
 			return value;
 		}
 
-		public static Optional<HspCommandType> byValue(int value) {
+		public static Optional<HspCommandType> byValue(final int value) {
 			return ELEM_MAP.get(value) != null ? Optional.of(ELEM_MAP.get(value)) : Optional.empty();
 		}
 
@@ -43,7 +42,7 @@ public class Messages {
 	public static abstract class HspMessage {
 		protected HspCommandType commandType;
 
-		public HspMessage(HspCommandType commandType) {
+		public HspMessage(final HspCommandType commandType) {
 			this.commandType = commandType;
 		}
 
@@ -58,7 +57,7 @@ public class Messages {
 		private final int type;
 		private final byte[] payload;
 
-		public DataMessage(int type, byte[] payload) {
+		public DataMessage(final int type, final byte[] payload) {
 			super(HspCommandType.DataCommand);
 			this.type = type;
 			this.payload = payload;
@@ -74,8 +73,7 @@ public class Messages {
 
 		@Override
 		public byte[] toBytes() {
-			return concat(varintFromUnsignedInt(commandType.value()), varintFromUnsignedInt(type),
-					varintFromUnsignedInt(payload.length), payload);
+			return concat(varintFromUnsignedInt(commandType.value()), varintFromUnsignedInt(type), varintFromUnsignedInt(payload.length), payload);
 		}
 	}
 
@@ -84,7 +82,7 @@ public class Messages {
 		private final int type;
 		private final byte[] payload;
 
-		public DataAckMessage(byte[] messageId, int type, byte[] payload) {
+		public DataAckMessage(final byte[] messageId, final int type, final byte[] payload) {
 			super(HspCommandType.DataAckCommand);
 			this.messageId = messageId;
 			this.type = type;
@@ -105,15 +103,14 @@ public class Messages {
 
 		@Override
 		public byte[] toBytes() {
-			return concat(varintFromUnsignedInt(commandType.value()), messageId, varintFromUnsignedInt(type),
-					varintFromUnsignedInt(payload.length), payload);
+			return concat(varintFromUnsignedInt(commandType.value()), messageId, varintFromUnsignedInt(type), varintFromUnsignedInt(payload.length), payload);
 		}
 	}
 
 	public static class AckMessage extends HspMessage {
 		private final byte[] messageId;
 
-		public AckMessage(byte[] messageId) {
+		public AckMessage(final byte[] messageId) {
 			super(HspCommandType.AckCommand);
 			this.messageId = messageId;
 		}
@@ -133,7 +130,7 @@ public class Messages {
 		private final int type;
 		private final byte[] payload;
 
-		public ErrorMessage(byte[] messageId, int type, byte[] payload) {
+		public ErrorMessage(final byte[] messageId, final int type, final byte[] payload) {
 			super(HspCommandType.ErrorCommand);
 			this.messageId = messageId;
 			this.type = type;
@@ -154,8 +151,7 @@ public class Messages {
 
 		@Override
 		public byte[] toBytes() {
-			return concat(varintFromUnsignedInt(commandType.value()), messageId, varintFromUnsignedInt(type),
-					varintFromUnsignedInt(payload.length), payload);
+			return concat(varintFromUnsignedInt(commandType.value()), messageId, varintFromUnsignedInt(type), varintFromUnsignedInt(payload.length), payload);
 		}
 	}
 
@@ -184,7 +180,7 @@ public class Messages {
 	public static class ErrorUndefMessage extends HspMessage {
 		private final byte[] messageId;
 
-		public ErrorUndefMessage(byte[] messageId) {
+		public ErrorUndefMessage(final byte[] messageId) {
 			super(HspCommandType.ErrorUndefCommand);
 			this.messageId = messageId;
 		}
