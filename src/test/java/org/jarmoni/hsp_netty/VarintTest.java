@@ -45,28 +45,31 @@ public class VarintTest {
 		{
 			final byte[] bytes = varintFromUnsignedInt(0x81);
 			assertThat(bytes.length, is(2));
+			assertThat(bytes[0], is((byte) 0x81));
+			assertThat(bytes[1], is((byte) 0x01));
 			assertThat(unsignedIntFromBytes(bytes), is(0x8101));
 		}
 
 		{
 			final byte[] bytes = varintFromUnsignedInt(0x80);
 			assertThat(bytes.length, is(2));
-			assertThat(unsignedIntFromBytes(bytes), is(0x8001));
+			assertThat(bytes[0], is((byte) 0x80));
+			assertThat(bytes[1], is((byte) 0x01));
 		}
 		{
 			final byte[] bytes = varintFromUnsignedInt(0x7f);
 			assertThat(bytes.length, is(1));
-			assertThat(unsignedIntFromBytes(bytes), is(0x7f));
+			assertThat(bytes[0], is((byte) 0x7f));
 		}
 		{
 			final byte[] bytes = varintFromUnsignedInt(1);
 			assertThat(bytes.length, is(1));
-			assertThat(unsignedIntFromBytes(bytes), is(1));
+			assertThat(bytes[0], is((byte) 1));
 		}
 		{
 			final byte[] bytes = varintFromUnsignedInt(0);
 			assertThat(bytes.length, is(1));
-			assertThat(unsignedIntFromBytes(bytes), is(0));
+			assertThat(bytes[0], is((byte) 0));
 		}
 	}
 
