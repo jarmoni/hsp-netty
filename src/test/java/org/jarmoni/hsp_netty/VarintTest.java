@@ -3,17 +3,13 @@ package org.jarmoni.hsp_netty;
 import static org.hamcrest.Matchers.is;
 import static org.jarmoni.hsp_netty.ByteUtil.bytesFromHexString;
 import static org.jarmoni.hsp_netty.ByteUtil.subArray;
-import static org.jarmoni.hsp_netty.ByteUtil.unsignedIntFromBytes;
 import static org.jarmoni.hsp_netty.Varint.calcRequiredVarintBytes;
 import static org.jarmoni.hsp_netty.Varint.getVarintBytes;
 import static org.jarmoni.hsp_netty.Varint.unsignedIntFromVarint;
-import static org.jarmoni.hsp_netty.Varint.varintFromUnsignedInt;
 import static org.junit.Assert.assertThat;
 
 import java.util.Arrays;
 import java.util.Optional;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.junit.Test;
 
@@ -23,53 +19,73 @@ import io.netty.buffer.Unpooled;
 public class VarintTest {
 
 	@Test
-	public void testVarintFromUnsignedInt() throws Exception {
+	public void testReadInt() throws Exception {
+
 		{
-			final byte[] bytes = varintFromUnsignedInt(0xFFFFFFFF);
-			assertThat(bytes.length, is(5));
-			assertThat(DatatypeConverter.printHexBinary(bytes), is("FFFFFFFF0F"));
-			assertThat(unsignedIntFromBytes(new byte[] { bytes[0], bytes[1], bytes[2], bytes[3] }), is(0xFFFFFFFF));
-			assertThat(unsignedIntFromBytes(new byte[] { bytes[4] }), is(15));
-		}
-		{
-			final byte[] bytes = varintFromUnsignedInt(0x9DE8D6D);
-			assertThat(bytes.length, is(4));
-			assertThat(unsignedIntFromBytes(bytes), is(0xed9afa4e));
-		}
-		{
-			final byte[] bytes = varintFromUnsignedInt(0x1D8C3A);
-			assertThat(bytes.length, is(3));
-			assertThat(unsignedIntFromBytes(bytes), is(0xba9876));
+			final ByteBuf varint = Unpooled.buffer();
+			Varint.varintFromInt(varint, 0xFFFFFFFF);
+			assertThat(varint.readableBytes(), is(5));
+			assertThat(varint.readByte(), is((byte) 0xFF));
+			assertThat(varint.readByte(), is((byte) 0xFF));
+			assertThat(varint.readByte(), is((byte) 0xFF));
+			assertThat(varint.readByte(), is((byte) 0xFF));
+			assertThat(varint.readByte(), is((byte) 0x0F));
 		}
 
 		{
-			final byte[] bytes = varintFromUnsignedInt(0x81);
-			assertThat(bytes.length, is(2));
-			assertThat(bytes[0], is((byte) 0x81));
-			assertThat(bytes[1], is((byte) 0x01));
-			assertThat(unsignedIntFromBytes(bytes), is(0x8101));
+			final ByteBuf varint = Unpooled.buffer();
+			Varint.varintFromInt(varint, 0x9DE8D6D);
+			assertThat(varint.readableBytes(), is(4));
+			assertThat(varint.readByte(), is((byte) 0xed));
+			assertThat(varint.readByte(), is((byte) 0x9a));
+			assertThat(varint.readByte(), is((byte) 0xfa));
+			assertThat(varint.readByte(), is((byte) 0x4e));
 		}
 
 		{
-			final byte[] bytes = varintFromUnsignedInt(0x80);
-			assertThat(bytes.length, is(2));
-			assertThat(bytes[0], is((byte) 0x80));
-			assertThat(bytes[1], is((byte) 0x01));
+			final ByteBuf varint = Unpooled.buffer();
+			Varint.varintFromInt(varint, 0x1D8C3A);
+			assertThat(varint.readableBytes(), is(3));
+			assertThat(varint.readByte(), is((byte) 0xba));
+			assertThat(varint.readByte(), is((byte) 0x98));
+			assertThat(varint.readByte(), is((byte) 0x76));
 		}
+
 		{
-			final byte[] bytes = varintFromUnsignedInt(0x7f);
-			assertThat(bytes.length, is(1));
-			assertThat(bytes[0], is((byte) 0x7f));
+			final ByteBuf varint = Unpooled.buffer();
+			Varint.varintFromInt(varint, 0x81);
+			assertThat(varint.readableBytes(), is(2));
+			assertThat(varint.readByte(), is((byte) 0x81));
+			assertThat(varint.readByte(), is((byte) 0x01));
 		}
+
 		{
-			final byte[] bytes = varintFromUnsignedInt(1);
-			assertThat(bytes.length, is(1));
-			assertThat(bytes[0], is((byte) 1));
+			final ByteBuf varint = Unpooled.buffer();
+			Varint.varintFromInt(varint, 0x80);
+			assertThat(varint.readableBytes(), is(2));
+			assertThat(varint.readByte(), is((byte) 0x80));
+			assertThat(varint.readByte(), is((byte) 0x01));
 		}
+
 		{
-			final byte[] bytes = varintFromUnsignedInt(0);
-			assertThat(bytes.length, is(1));
-			assertThat(bytes[0], is((byte) 0));
+			final ByteBuf varint = Unpooled.buffer();
+			Varint.varintFromInt(varint, 0x7f);
+			assertThat(varint.readableBytes(), is(1));
+			assertThat(varint.readByte(), is((byte) 0x7f));
+		}
+
+		{
+			final ByteBuf varint = Unpooled.buffer();
+			Varint.varintFromInt(varint, 0x01);
+			assertThat(varint.readableBytes(), is(1));
+			assertThat(varint.readByte(), is((byte) 0x01));
+		}
+
+		{
+			final ByteBuf varint = Unpooled.buffer();
+			Varint.varintFromInt(varint, 0x00);
+			assertThat(varint.readableBytes(), is(1));
+			assertThat(varint.readByte(), is((byte) 0x00));
 		}
 	}
 

@@ -17,9 +17,8 @@ public class Varint {
 	private static final Logger LOG = LoggerFactory.getLogger(Varint.class);
 
 	/*
-	 * Decodes Byte-Array as Int. Int is treated 'unsigned' so it is strongly
-	 * discouraged to use the 'int-value' for any operations. Bit-operations are
-	 * allowed though.
+	 * Decodes Byte-Array as Int. Int is treated 'unsigned' so it is strongly discouraged to use the 'int-value' for any operations. Bit-operations are allowed
+	 * though.
 	 */
 	public static int unsignedIntFromVarint(final byte[] varint) {
 		int bits = 0;
@@ -33,8 +32,7 @@ public class Varint {
 			bits += 7;
 			currentIdx += 1;
 			if (bits > 35) {
-				throw new NumberFormatException(
-						"Input does not fit into an int=" + DatatypeConverter.printHexBinary(varint));
+				throw new NumberFormatException("Input does not fit into an int=" + DatatypeConverter.printHexBinary(varint));
 			}
 		} while ((current & 0x80) != 0);
 		return res;
@@ -56,6 +54,16 @@ public class Varint {
 		}
 		// Set MSB to '0' (indicates last byte of varint)
 		return concat(dest, new byte[] { (byte) (x & 0x7F) });
+	}
+
+	public static void varintFromInt(final ByteBuf varint, final int in) {
+		int i = in;
+		while ((i & 0xFFFFFF80) != 0L) {
+			System.out.println((i & 0x7F) | 0x80);
+			varint.writeByte((i & 0x7F) | 0x80);
+			i >>>= 7;
+		}
+		varint.writeByte(i & 0x7f);
 	}
 
 	public static Optional<Integer> parseVarintBytes(final ByteBuf buffer, final int maxVarintBytes) {
