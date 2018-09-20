@@ -1,7 +1,6 @@
 package org.jarmoni.hsp_netty;
 
 import static org.jarmoni.hsp_netty.ByteUtil.append;
-import static org.jarmoni.hsp_netty.ByteUtil.concat;
 
 import java.util.Optional;
 
@@ -39,27 +38,9 @@ public class Varint {
 	}
 
 	/* Encodes given Int as Byte-Array. Int is treated 'unsigned' */
-	public static byte[] varintFromUnsignedInt(final int in) {
-		int x = in;
-		byte[] dest = new byte[0];
-		// As long as payload-bits are available (=7)
-		while ((x & 0xFFFFFF80) != 0L) {
-			// x & 0x7F -> only use the 7 lowest bits as content (everything
-			// before will be '0')
-			// | 0x80 -> Set '1' as MSB
-			dest = concat(dest, new byte[] { (byte) ((x & 0x7F) | 0x80) });
-			// Bytes.t
-			// shift 7 bits to right, do NOT preserve MSB (logical shift)
-			x >>>= 7;
-		}
-		// Set MSB to '0' (indicates last byte of varint)
-		return concat(dest, new byte[] { (byte) (x & 0x7F) });
-	}
-
 	public static void varintFromInt(final ByteBuf varint, final int in) {
 		int i = in;
 		while ((i & 0xFFFFFF80) != 0L) {
-			System.out.println((i & 0x7F) | 0x80);
 			varint.writeByte((i & 0x7F) | 0x80);
 			i >>>= 7;
 		}
