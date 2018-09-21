@@ -1,26 +1,21 @@
 package org.jarmoni.hsp_netty;
 
 import static org.hamcrest.Matchers.is;
-import static org.jarmoni.hsp_netty.ByteUtil.bytesFromHexString;
-import static org.jarmoni.hsp_netty.ByteUtil.subArray;
 import static org.jarmoni.hsp_netty.Varint.calcRequiredVarintBytes;
 import static org.jarmoni.hsp_netty.Varint.getVarintBytes;
-import static org.jarmoni.hsp_netty.Varint.unsignedIntFromVarint;
 import static org.junit.Assert.assertThat;
 
-import java.util.Arrays;
-import java.util.Optional;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 
 public class VarintTest {
 
 	@Test
-	public void testReadInt() throws Exception {
-
+	public void testVarintFromInt() throws Exception {
 		{
 			final ByteBuf varint = Unpooled.buffer();
 			Varint.varintFromInt(varint, 0xFFFFFFFF);
@@ -87,18 +82,72 @@ public class VarintTest {
 			assertThat(varint.readableBytes(), is(1));
 			assertThat(varint.readByte(), is((byte) 0x00));
 		}
+
 	}
 
 	@Test
-	public void testUnsignedIntFromVarint() throws Exception {
-		assertThat(unsignedIntFromVarint(bytesFromHexString("FFFFFFFF0F")), is(0xFFFFFFFF));
-		assertThat(unsignedIntFromVarint(bytesFromHexString("ed9afa4e")), is(0x9DE8D6D));
-		assertThat(unsignedIntFromVarint(bytesFromHexString("ba9876")), is(0x1D8C3A));
-		assertThat(unsignedIntFromVarint(bytesFromHexString("8101")), is(0x81));
-		assertThat(unsignedIntFromVarint(bytesFromHexString("8001")), is(0x80));
-		assertThat(unsignedIntFromVarint(bytesFromHexString("7F")), is(0x7F));
-		assertThat(unsignedIntFromVarint(bytesFromHexString("01")), is(1));
-		assertThat(unsignedIntFromVarint(bytesFromHexString("00")), is(0));
+	public void testIntFromVarint() throws Exception {
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("FFFFFFFF0F"));
+			assertThat(Varint.intFromVarint(in), is(0xFFFFFFFF));
+		}
+
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("ed9afa4e"));
+			assertThat(Varint.intFromVarint(in), is(0x9DE8D6D));
+		}
+
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("ba9876"));
+			assertThat(Varint.intFromVarint(in), is(0x1D8C3A));
+		}
+
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("8101"));
+			assertThat(Varint.intFromVarint(in), is(0x81));
+		}
+
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("8001"));
+			assertThat(Varint.intFromVarint(in), is(0x80));
+		}
+
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("7F"));
+			assertThat(Varint.intFromVarint(in), is(0x7F));
+		}
+
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("01"));
+			assertThat(Varint.intFromVarint(in), is(1));
+		}
+
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("00"));
+			assertThat(Varint.intFromVarint(in), is(0));
+		}
+
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("8000"));
+			try {
+				Varint.intFromVarint(in);
+				Assert.fail("Expected previous call to fail.");
+			} catch (final NumberFormatException e) {
+				System.out.println(e.getMessage());
+				assertThat(e.getMessage().startsWith("'0-byte' is only allowed in varints of len=1"), is(true));
+			}
+		}
+
+		{
+			final ByteBuf in = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump("FFFFFFFFFF0F"));
+			try {
+				Varint.intFromVarint(in);
+				Assert.fail("Expected previous call to fail.");
+			} catch (final NumberFormatException e) {
+				System.out.println(e.getMessage());
+				assertThat(e.getMessage().startsWith("Input does not fit into an int"), is(true));
+			}
+		}
 	}
 
 	@Test
@@ -108,13 +157,21 @@ public class VarintTest {
 	}
 
 	@Test
+	public void testByteBufSlice() throws Exception {
+		final ByteBuf buf = Unpooled.copiedBuffer(new byte[] { 1, 2, 3, 4 });
+		final ByteBuf slice = buf.slice();
+		buf.readByte();
+		assertThat(buf.readerIndex(), is(1));
+		assertThat(slice.readerIndex(), is(0));
+	}
+
+	@Test
 	public void testGetVarintBytes() throws Exception {
-		final byte[] bytes = new byte[] { -1, -1, -1, -1, 0x7F, 0x7E, 0x7F };
-		final byte[] expected = subArray(bytes, 0, 5);
-		final ByteBuf buffer = Unpooled.copiedBuffer(bytes);
-		final Optional<byte[]> res = getVarintBytes(buffer, 5);
-		assertThat(Arrays.equals(expected, res.get()), is(true));
-		final byte next = buffer.readByte();
+		final ByteBuf in = Unpooled.copiedBuffer(new byte[] { -1, -1, -1, -1, 0x7F, 0x7E, 0x7F });
+		final ByteBuf expected = in.copy(0, 5);
+		final ByteBuf res = getVarintBytes(in, 5);
+		assertThat(ByteBufUtil.equals(res, expected), is(true));
+		final byte next = in.readByte();
 		assertThat(next == (byte) 0x7E, is(true));
 	}
 }
