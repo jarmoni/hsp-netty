@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/dcsolutions/kalinka.svg?branch=master)](https://travis-ci.org/jarmoni/hsp-netty)
 # hsp-netty
 Provides a Java-implementation of the HSP-codec for usage in netty-based servers/clients.
 
