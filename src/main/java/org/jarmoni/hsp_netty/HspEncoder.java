@@ -17,10 +17,9 @@ public class HspEncoder extends MessageToByteEncoder<HspMessage> {
 	private static final HspEncoder INSTANCE = new HspEncoder();
 
 	@Override
-	protected void encode(ChannelHandlerContext ctx, HspMessage msg, ByteBuf out) throws Exception {
+	protected void encode(final ChannelHandlerContext ctx, final HspMessage msg, final ByteBuf out) throws Exception {
 		LOG.debug("Receiving bytes...");
-		final byte[] bytes = msg.toBytes();
-		out.writeBytes(bytes);
+		msg.toBytes(out);
 	}
 
 	public static HspEncoder instance() {

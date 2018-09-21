@@ -53,7 +53,7 @@ public class Varint {
 			if (count >= maxVarintBytes) {
 				throw new NumberFormatException("Number of varint-bytes=" + count + " exceeds maximum=" + maxVarintBytes);
 			}
-			currentByte = byteBuf.getByte(count);
+			currentByte = byteBuf.getByte(byteBuf.readerIndex() + count);
 			count += 1;
 		} while ((currentByte & 0x80) != 0);
 		return byteBuf.readSlice(count);
