@@ -48,11 +48,11 @@ public class Types {
 	}
 
 	public static class HspPayloadType {
-		private final Integer intValue;
+		private final int intValue;
 		private final byte[] varintValue;
 		private final String description;
 
-		public HspPayloadType(final Integer id, final String description) {
+		public HspPayloadType(final int id, final String description) {
 			super();
 			this.intValue = id;
 			this.description = description;
@@ -62,7 +62,7 @@ public class Types {
 			varint.readBytes(this.varintValue);
 		}
 
-		public Integer getIntValue() {
+		public int getIntValue() {
 			return intValue;
 		}
 

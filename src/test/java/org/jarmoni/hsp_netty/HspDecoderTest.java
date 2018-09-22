@@ -49,7 +49,7 @@ public class HspDecoderTest {
 	@Before
 	public void setUp() throws Exception {
 		knownTypes = new HashMap<>();
-		knownTypes.put(type.getIntValue(), type);
+		knownTypes.put(Integer.valueOf(type.getIntValue()), type);
 		decoder = new HspDecoder(knownTypes);
 		out = new ArrayList<>();
 		when(ctx.channel()).thenReturn(channel);
