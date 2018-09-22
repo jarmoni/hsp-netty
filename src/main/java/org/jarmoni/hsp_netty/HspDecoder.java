@@ -177,7 +177,9 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			stateError(EX_MISSING_FIELDS, "Excpected payload-length to be present");
 			return;
 		}
-		final ByteBuf payload = buffer.readSlice(currentFields.payloadLength.get());
+		// we come into trouble when trying to use method #readSlice(int) because reference-counter won't be increased
+		// an has value '0' in next processing stage, so the bytes will be unavailable
+		final ByteBuf payload = buffer.readRetainedSlice(currentFields.payloadLength.get());
 		currentFields.payload = Optional.of(payload);
 		pushMessage(out);
 	}

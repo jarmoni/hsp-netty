@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 
 public class Varint {
 
@@ -17,7 +16,7 @@ public class Varint {
 	 */
 	public static int intFromVarint(final ByteBuf varint) {
 		// Just for debugging ('slice' only creates a view of ByteBuf, so this operation is quite cheap)
-		final ByteBuf copy = varint.slice();
+		// final ByteBuf copy = varint.slice(0, varint.readableBytes());
 		int bits = 0;
 		int res = 0;
 		int current = 0;
@@ -26,11 +25,11 @@ public class Varint {
 			res |= (current & 0x7F) << bits;
 			bits += 7;
 			if (bits > 35) {
-				throw new NumberFormatException("Input does not fit into an int=" + ByteBufUtil.hexDump(copy));
+				throw new NumberFormatException("Input does not fit into an int");
 			}
 		} while ((current & 0x80) != 0);
 		if (bits > 7 && current == (byte) 0) {
-			throw new NumberFormatException("'0-byte' is only allowed in varints of len=1. Received=" + ByteBufUtil.hexDump(copy));
+			throw new NumberFormatException("'0-byte' is only allowed in varints of len=1=");
 		}
 		return res;
 	}
@@ -56,7 +55,7 @@ public class Varint {
 			currentByte = byteBuf.getByte(byteBuf.readerIndex() + count);
 			count += 1;
 		} while ((currentByte & 0x80) != 0);
-		return byteBuf.readSlice(count);
+		return byteBuf.readRetainedSlice(count);
 	}
 
 	/*
