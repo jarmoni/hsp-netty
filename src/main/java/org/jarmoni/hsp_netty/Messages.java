@@ -40,6 +40,7 @@ public class Messages {
 		}
 
 		@Override
+		// TODO What about using CompositeBuffer here?
 		public void toBytes(final ByteBuf buf) {
 			buf.writeBytes(commandType.varintValue());
 			buf.writeBytes(payloadType.getVarintValue());
