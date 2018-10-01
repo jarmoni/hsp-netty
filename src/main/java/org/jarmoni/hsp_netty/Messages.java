@@ -1,6 +1,7 @@
 package org.jarmoni.hsp_netty;
 
 import org.jarmoni.hsp_netty.Types.HspCommandType;
+import org.jarmoni.hsp_netty.Types.HspErrorType;
 import org.jarmoni.hsp_netty.Types.HspPayloadType;
 
 import io.netty.buffer.ByteBuf;
@@ -105,13 +106,13 @@ public class Messages {
 
 	public static class ErrorMessage extends HspMessage {
 		private final ByteBuf messageId;
-		private final HspPayloadType payloadType;
+		private final HspErrorType errorType;
 		private final ByteBuf payload;
 
-		public ErrorMessage(final ByteBuf messageId, final HspPayloadType payloadType, final ByteBuf payload) {
+		public ErrorMessage(final ByteBuf messageId, final HspErrorType payloadType, final ByteBuf payload) {
 			super(HspCommandType.ErrorCommand);
 			this.messageId = messageId;
-			this.payloadType = payloadType;
+			this.errorType = payloadType;
 			this.payload = payload;
 		}
 
@@ -119,8 +120,8 @@ public class Messages {
 			return messageId;
 		}
 
-		public HspPayloadType getPayloadType() {
-			return payloadType;
+		public HspErrorType getErrorType() {
+			return errorType;
 		}
 
 		public ByteBuf getPayload() {
@@ -131,7 +132,7 @@ public class Messages {
 		public void toBytes(final ByteBuf buf) {
 			buf.writeBytes(commandType.varintValue());
 			buf.writeBytes(messageId, 0, messageId.readableBytes());
-			buf.writeBytes(payloadType.getVarintValue());
+			buf.writeBytes(errorType.getVarintValue());
 			Varint.varintFromInt(buf, payload.readableBytes());
 			buf.writeBytes(payload, 0, payload.readableBytes());
 		}

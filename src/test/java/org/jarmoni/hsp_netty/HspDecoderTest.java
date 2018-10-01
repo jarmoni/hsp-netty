@@ -19,6 +19,7 @@ import org.jarmoni.hsp_netty.Messages.ErrorMessage;
 import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
 import org.jarmoni.hsp_netty.Messages.PingMessage;
 import org.jarmoni.hsp_netty.Messages.PongMessage;
+import org.jarmoni.hsp_netty.Types.HspErrorType;
 import org.jarmoni.hsp_netty.Types.HspPayloadType;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,8 +37,10 @@ public class HspDecoderTest {
 	@Rule
 	public ExpectedException ee = ExpectedException.none();
 
-	private final HspPayloadType type = new HspPayloadType(0x99, "some desc");
-	private Map<Integer, HspPayloadType> knownTypes;
+	private final HspPayloadType payloadType = new HspPayloadType(0x99, "some desc");
+	private final HspErrorType errorType = new HspErrorType(0x98, "some err");
+	private Map<Integer, HspPayloadType> knownPayloadTypes;
+	private Map<Integer, HspErrorType> knownErrorTypes;
 	private final ByteBuf msgId = Unpooled.copiedBuffer(ByteBufUtil.decodeHexDump("f001"));
 	private final ByteBuf payload = Unpooled.copiedBuffer("xyz".getBytes(StandardCharsets.UTF_8));
 
@@ -48,16 +51,18 @@ public class HspDecoderTest {
 
 	@Before
 	public void setUp() throws Exception {
-		knownTypes = new HashMap<>();
-		knownTypes.put(Integer.valueOf(type.getIntValue()), type);
-		decoder = new HspDecoder(knownTypes);
+		knownPayloadTypes = new HashMap<>();
+		knownPayloadTypes.put(Integer.valueOf(payloadType.getIntValue()), payloadType);
+		knownErrorTypes = new HashMap<>();
+		knownErrorTypes.put(Integer.valueOf(errorType.getIntValue()), errorType);
+		decoder = new HspDecoder(knownPayloadTypes, knownErrorTypes);
 		out = new ArrayList<>();
 		when(ctx.channel()).thenReturn(channel);
 	}
 
 	@Test
 	public void testDataCommandToDataMessage() throws Exception {
-		final DataMessage dataMessage = new DataMessage(type, payload);
+		final DataMessage dataMessage = new DataMessage(payloadType, payload);
 		final ByteBuf buf = Unpooled.buffer();
 		dataMessage.toBytes(buf);
 		decoder.decode(ctx, buf, out);
@@ -73,10 +78,10 @@ public class HspDecoderTest {
 
 	@Test
 	public void testDataCommandToDataMessageMessageTooBig() throws Exception {
-		final DataMessage dataMessage = new DataMessage(type, payload);
+		final DataMessage dataMessage = new DataMessage(payloadType, payload);
 		final ByteBuf buf = Unpooled.buffer();
 		dataMessage.toBytes(buf);
-		decoder = new HspDecoder(1, knownTypes);
+		decoder = new HspDecoder(1, knownPayloadTypes, knownErrorTypes);
 		ee.expect(HspDecoderException.class);
 		ee.expectMessage("Max length exceeded");
 		decoder.decode(ctx, buf, out);
@@ -84,7 +89,7 @@ public class HspDecoderTest {
 
 	@Test
 	public void testDataAckCommandToDataAckMessage() throws Exception {
-		final DataAckMessage dataAckMessage = new DataAckMessage(msgId, type, payload);
+		final DataAckMessage dataAckMessage = new DataAckMessage(msgId, payloadType, payload);
 		final ByteBuf buf = Unpooled.buffer();
 		dataAckMessage.toBytes(buf);
 		decoder.decode(ctx, buf, out);
@@ -112,7 +117,7 @@ public class HspDecoderTest {
 
 	@Test
 	public void testErrorCommandToErrorMessage() throws Exception {
-		final ErrorMessage errorMessage = new ErrorMessage(msgId, type, payload);
+		final ErrorMessage errorMessage = new ErrorMessage(msgId, errorType, payload);
 		final ByteBuf buf = Unpooled.buffer();
 		errorMessage.toBytes(buf);
 		decoder.decode(ctx, buf, out);
@@ -121,7 +126,7 @@ public class HspDecoderTest {
 		final ErrorMessage msg = (ErrorMessage) out.get(0);
 		assertThat(msg.getCommandType(), is(errorMessage.getCommandType()));
 		assertThat(ByteBufUtil.hashCode(msg.getMessageId()), is(ByteBufUtil.hashCode(msgId)));
-		assertThat(msg.getPayloadType(), is(errorMessage.getPayloadType()));
+		assertThat(msg.getErrorType(), is(errorMessage.getErrorType()));
 		assertThat(ByteBufUtil.hashCode(msg.getPayload()), is(ByteBufUtil.hashCode(payload)));
 	}
 

@@ -15,6 +15,7 @@ import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
 import org.jarmoni.hsp_netty.Messages.PingMessage;
 import org.jarmoni.hsp_netty.Messages.PongMessage;
 import org.jarmoni.hsp_netty.Types.HspCommandType;
+import org.jarmoni.hsp_netty.Types.HspErrorType;
 import org.jarmoni.hsp_netty.Types.HspPayloadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,23 +31,25 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	private static final int MAX_PAYLOAD_BYTES_DEFAULT = 8192;
 	private final int maxMessageIdVarintBytes = calcRequiredVarintBytes(4);
 	private final int maxPayloadBytes;
-	private final Map<Integer, HspPayloadType> knownTypes;
+	private final Map<Integer, HspPayloadType> knownPayloadTypes;
+	private final Map<Integer, HspErrorType> knownErrorTypes;
 	private CurrentFields currentFields;
 
-	public HspDecoder(final Map<Integer, HspPayloadType> knownTypes) {
-		this(MAX_PAYLOAD_BYTES_DEFAULT, knownTypes);
+	public HspDecoder(final Map<Integer, HspPayloadType> knownPayloadTypes, final Map<Integer, HspErrorType> knownErrorTypes) {
+		this(MAX_PAYLOAD_BYTES_DEFAULT, knownPayloadTypes, knownErrorTypes);
 	}
 
-	public HspDecoder(final int maxPayloadBytes, final Map<Integer, HspPayloadType> knownTypes) {
-		this(DecoderState.READ_COMMAND, maxPayloadBytes, knownTypes);
+	public HspDecoder(final int maxPayloadBytes, final Map<Integer, HspPayloadType> knownPayloadTypes, final Map<Integer, HspErrorType> knownErrorTypes) {
+		this(DecoderState.READ_COMMAND, maxPayloadBytes, knownPayloadTypes, knownErrorTypes);
 	}
 
-	public HspDecoder(final DecoderState startState, final int maxPayloadBytes, final Map<Integer, HspPayloadType> knownTypes) {
+	public HspDecoder(final DecoderState startState, final int maxPayloadBytes, final Map<Integer, HspPayloadType> knownPayloadTypes, final Map<Integer, HspErrorType> knownErrorTypes) {
 		super(startState);
 		this.maxPayloadBytes = maxPayloadBytes;
 		this.currentFields = new CurrentFields();
-		this.knownTypes = knownTypes;
-		LOG.debug("Initialized with startState={}, maxPayloadBytes={}, knownTypes={}", startState, maxPayloadBytes, knownTypes);
+		this.knownPayloadTypes = knownPayloadTypes;
+		this.knownErrorTypes = knownErrorTypes;
+		LOG.debug("Initialized with startState={}, maxPayloadBytes={}, knownPayloadTypes={}, knownErrorTypes={}", startState, maxPayloadBytes, knownPayloadTypes, knownErrorTypes);
 	}
 
 	@Override
@@ -58,8 +61,12 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			readCommand(ctx, buffer, out);
 			break;
 		}
-		case READ_TYPE: {
-			readType(ctx, buffer, out);
+		case READ_PAYLOAD_TYPE: {
+			readPayoadType(ctx, buffer, out);
+			break;
+		}
+		case READ_ERROR_TYPE: {
+			readErrorType(ctx, buffer, out);
 			break;
 		}
 		case READ_PAYLOAD_LENGTH: {
@@ -100,7 +107,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		currentFields.command = cmdTypeOpt;
 		switch (cmdTypeOpt.get()) {
 		case DataCommand:
-			readType(ctx, buffer, out);
+			readPayoadType(ctx, buffer, out);
 			break;
 		case DataAckCommand: {
 			readMessageId(ctx, buffer, out);
@@ -131,20 +138,37 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		}
 	}
 
-	private void readType(final ChannelHandlerContext ctx, final ByteBuf buffer, final List<Object> out) {
-		checkpoint(DecoderState.READ_TYPE);
-		int type = -1;
+	private void readPayoadType(final ChannelHandlerContext ctx, final ByteBuf buffer, final List<Object> out) {
+		checkpoint(DecoderState.READ_PAYLOAD_TYPE);
+		int payloadType = -1;
 		try {
-			type = Varint.intFromVarint(buffer);
+			payloadType = Varint.intFromVarint(buffer);
 		} catch (final Exception e) {
-			stateError(EX_VARINT_PARSE_ERROR, "Parsing of (type-) Varint failed");
+			stateError(EX_VARINT_PARSE_ERROR, "Parsing of (payload-type-) Varint failed");
 			return;
 		}
-		if (!knownTypes.containsKey(type)) {
-			stateError(EX_INVALID_TYPE, "Invalid type=" + type);
+		if (!knownPayloadTypes.containsKey(payloadType)) {
+			stateError(EX_INVALID_PAYLOAD_TYPE, "Invalid payload-type=" + payloadType);
 			return;
 		}
-		currentFields.type = Optional.of(knownTypes.get(type));
+		currentFields.payloadType = Optional.of(knownPayloadTypes.get(payloadType));
+		readPayloadLength(ctx, buffer, out);
+	}
+
+	private void readErrorType(final ChannelHandlerContext ctx, final ByteBuf buffer, final List<Object> out) {
+		checkpoint(DecoderState.READ_ERROR_TYPE);
+		int errorType = -1;
+		try {
+			errorType = Varint.intFromVarint(buffer);
+		} catch (final Exception e) {
+			stateError(EX_VARINT_PARSE_ERROR, "Parsing of (error-type-) Varint failed");
+			return;
+		}
+		if (!knownErrorTypes.containsKey(errorType)) {
+			stateError(EX_INVALID_ERROR_TYPE, "Invalid error-type=" + errorType);
+			return;
+		}
+		currentFields.errorType = Optional.of(knownErrorTypes.get(errorType));
 		readPayloadLength(ctx, buffer, out);
 	}
 
@@ -202,9 +226,9 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		if (currentFields.command.get().equals(HspCommandType.AckCommand)) {
 			pushMessage(out);
 		} else if (currentFields.command.get().equals(HspCommandType.DataAckCommand)) {
-			readType(ctx, buffer, out);
+			readPayoadType(ctx, buffer, out);
 		} else if (currentFields.command.get().equals(HspCommandType.ErrorCommand)) {
-			readType(ctx, buffer, out);
+			readErrorType(ctx, buffer, out);
 		} else if (currentFields.command.get().equals(HspCommandType.ErrorUndefCommand)) {
 			pushMessage(out);
 		} else {
@@ -254,20 +278,20 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	}
 
 	private void pushDataMessage(final List<Object> out) {
-		if (!currentFields.type.isPresent() || !currentFields.payload.isPresent()) {
-			stateError(EX_MISSING_FIELDS, "type and payload must be present. Was: type=" + currentFields.type.isPresent() + ", payload=" + currentFields.payload.isPresent());
+		if (!currentFields.payloadType.isPresent() || !currentFields.payload.isPresent()) {
+			stateError(EX_MISSING_FIELDS, "type and payload must be present. Was: type=" + currentFields.payloadType.isPresent() + ", payload=" + currentFields.payload.isPresent());
 			return;
 		}
-		out.add(new DataMessage(currentFields.type.get(), currentFields.payload.get()));
+		out.add(new DataMessage(currentFields.payloadType.get(), currentFields.payload.get()));
 	}
 
 	private void pushDataAckMessage(final List<Object> out) {
-		if (!currentFields.messageId.isPresent() || !currentFields.type.isPresent() || !currentFields.payload.isPresent()) {
-			stateError(EX_MISSING_FIELDS, "messageId, type and payload must be present. Was: messageId=" + currentFields.messageId.isPresent() + ", type=" + currentFields.type.isPresent()
+		if (!currentFields.messageId.isPresent() || !currentFields.payloadType.isPresent() || !currentFields.payload.isPresent()) {
+			stateError(EX_MISSING_FIELDS, "messageId, type and payload must be present. Was: messageId=" + currentFields.messageId.isPresent() + ", type=" + currentFields.payloadType.isPresent()
 					+ ", payload=" + currentFields.payload.isPresent());
 			return;
 		}
-		out.add(new DataAckMessage(currentFields.messageId.get(), currentFields.type.get(), currentFields.payload.get()));
+		out.add(new DataAckMessage(currentFields.messageId.get(), currentFields.payloadType.get(), currentFields.payload.get()));
 	}
 
 	private void pushAckMessage(final List<Object> out) {
@@ -278,12 +302,12 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	}
 
 	private void pushErrorMessage(final List<Object> out) {
-		if (!currentFields.messageId.isPresent() || !currentFields.type.isPresent() || !currentFields.payload.isPresent()) {
-			stateError(EX_MISSING_FIELDS, "messageId, type and payload must be present. Was: messageId=" + currentFields.messageId.isPresent() + ", type=" + currentFields.type.isPresent()
+		if (!currentFields.messageId.isPresent() || !currentFields.errorType.isPresent() || !currentFields.payload.isPresent()) {
+			stateError(EX_MISSING_FIELDS, "messageId, type and payload must be present. Was: messageId=" + currentFields.messageId.isPresent() + ", type=" + currentFields.payloadType.isPresent()
 					+ ", payload=" + currentFields.payload.isPresent());
 			return;
 		}
-		out.add(new ErrorMessage(currentFields.messageId.get(), currentFields.type.get(), currentFields.payload.get()));
+		out.add(new ErrorMessage(currentFields.messageId.get(), currentFields.errorType.get(), currentFields.payload.get()));
 	}
 
 	private void pushErrorUndefMessage(final List<Object> out) {
@@ -312,14 +336,15 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 
 	public static class CurrentFields {
 		public Optional<HspCommandType> command = Optional.empty();
-		public Optional<HspPayloadType> type = Optional.empty();
+		public Optional<HspPayloadType> payloadType = Optional.empty();
+		public Optional<HspErrorType> errorType = Optional.empty();
 		public Optional<Integer> payloadLength = Optional.empty();
 		public Optional<ByteBuf> payload = Optional.empty();
 		public Optional<ByteBuf> messageId = Optional.empty();
 	}
 
 	enum DecoderState {
-		READ_COMMAND, READ_TYPE, READ_MESSAGE_ID, READ_PAYLOAD_LENGTH, READ_PAYLOAD, STATE_ERROR
+		READ_COMMAND, READ_PAYLOAD_TYPE, READ_ERROR_TYPE, READ_MESSAGE_ID, READ_PAYLOAD_LENGTH, READ_PAYLOAD, STATE_ERROR
 	}
 
 	// Decoder-state does exist, but is not handled in decoder (obviously bug)
@@ -334,8 +359,10 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	public static final HspDecoderException EX_MAX_LENGTH_EXCEEDED = new HspDecoderException("Max length exceeded");
 	// One or more expected fields of HSP-message are not present
 	public static final HspDecoderException EX_MISSING_FIELDS = new HspDecoderException("Missing fields");
-	// Type does not exist
-	public static final HspDecoderException EX_INVALID_TYPE = new HspDecoderException("Invalid type");
+	// Payload-Type does not exist
+	public static final HspDecoderException EX_INVALID_PAYLOAD_TYPE = new HspDecoderException("Invalid payload type");
+	// Error-Type does not exist
+	public static final HspDecoderException EX_INVALID_ERROR_TYPE = new HspDecoderException("Invalid error type");
 
 	public static class HspDecoderException extends RuntimeException {
 		private static final long serialVersionUID = -1382772990276005908L;

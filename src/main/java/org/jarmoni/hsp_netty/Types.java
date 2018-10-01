@@ -74,4 +74,32 @@ public class Types {
 			return description;
 		}
 	}
+
+	public static class HspErrorType {
+		private final int intValue;
+		private final byte[] varintValue;
+		private final String description;
+
+		public HspErrorType(final int id, final String description) {
+			super();
+			this.intValue = id;
+			this.description = description;
+			final ByteBuf varint = Unpooled.buffer();
+			Varint.varintFromInt(varint, id);
+			this.varintValue = new byte[varint.readableBytes()];
+			varint.readBytes(this.varintValue);
+		}
+
+		public int getIntValue() {
+			return intValue;
+		}
+
+		public byte[] getVarintValue() {
+			return varintValue;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+	}
 }

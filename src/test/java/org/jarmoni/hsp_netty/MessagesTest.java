@@ -12,6 +12,7 @@ import org.jarmoni.hsp_netty.Messages.ErrorMessage;
 import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
 import org.jarmoni.hsp_netty.Messages.PingMessage;
 import org.jarmoni.hsp_netty.Messages.PongMessage;
+import org.jarmoni.hsp_netty.Types.HspErrorType;
 import org.jarmoni.hsp_netty.Types.HspPayloadType;
 import org.junit.Test;
 
@@ -21,18 +22,19 @@ import io.netty.buffer.Unpooled;
 
 public class MessagesTest {
 
-	private final HspPayloadType type = new HspPayloadType(0x99, "some desc");
+	private final HspPayloadType payloadType = new HspPayloadType(0x99, "some desc");
+	private final HspErrorType errorType = new HspErrorType(0x98, "some err");
 	private final ByteBuf msgId = Unpooled.copiedBuffer(ByteBufUtil.decodeHexDump("f001"));
 	private final ByteBuf payload = Unpooled.copiedBuffer("xyz".getBytes(StandardCharsets.UTF_8));
 
 	@Test
 	public void testDataMessage() throws Exception {
-		final DataMessage msg = new DataMessage(type, payload);
+		final DataMessage msg = new DataMessage(payloadType, payload);
 		final ByteBuf serialized = Unpooled.buffer();
 		msg.toBytes(serialized);
 		assertThat(serialized.readableBytes(), is(7));
 		assertThat(serialized.readByte(), is((byte) 0));
-		assertThat(serialized.readByte(), is(type.getVarintValue()[0]));
+		assertThat(serialized.readByte(), is(payloadType.getVarintValue()[0]));
 		assertThat(serialized.readByte(), is((byte) 1));
 		assertThat(serialized.readByte(), is((byte) 3));
 		assertThat(ByteBufUtil.hashCode(serialized.readBytes(3)), is(ByteBufUtil.hashCode(payload)));
@@ -43,14 +45,14 @@ public class MessagesTest {
 
 	@Test
 	public void testDataAckMessage() throws Exception {
-		final DataAckMessage msg = new DataAckMessage(msgId, type, payload);
+		final DataAckMessage msg = new DataAckMessage(msgId, payloadType, payload);
 		final ByteBuf serialized = Unpooled.buffer();
 		msg.toBytes(serialized);
 		assertThat(serialized.readableBytes(), is(9));
 		assertThat(serialized.readByte(), is((byte) 1));
 		assertThat(serialized.readByte(), is((byte) 0xF0));
 		assertThat(serialized.readByte(), is((byte) 1));
-		assertThat(serialized.readByte(), is(type.getVarintValue()[0]));
+		assertThat(serialized.readByte(), is(payloadType.getVarintValue()[0]));
 		assertThat(serialized.readByte(), is((byte) 1));
 		assertThat(serialized.readByte(), is((byte) 3));
 		assertThat(ByteBufUtil.hashCode(serialized.readBytes(3)), is(ByteBufUtil.hashCode(payload)));
@@ -74,14 +76,14 @@ public class MessagesTest {
 
 	@Test
 	public void testErrorMessage() throws Exception {
-		final ErrorMessage msg = new ErrorMessage(msgId, type, payload);
+		final ErrorMessage msg = new ErrorMessage(msgId, errorType, payload);
 		final ByteBuf serialized = Unpooled.buffer();
 		msg.toBytes(serialized);
 		assertThat(serialized.readableBytes(), is(9));
 		assertThat(serialized.readByte(), is((byte) 3));
 		assertThat(serialized.readByte(), is((byte) 0xF0));
 		assertThat(serialized.readByte(), is((byte) 1));
-		assertThat(serialized.readByte(), is(type.getVarintValue()[0]));
+		assertThat(serialized.readByte(), is(errorType.getVarintValue()[0]));
 		assertThat(serialized.readByte(), is((byte) 1));
 		assertThat(serialized.readByte(), is((byte) 3));
 		assertThat(ByteBufUtil.hashCode(serialized.readBytes(3)), is(ByteBufUtil.hashCode(payload)));
