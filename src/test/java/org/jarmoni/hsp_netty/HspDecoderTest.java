@@ -83,7 +83,7 @@ public class HspDecoderTest {
 		dataMessage.toBytes(buf);
 		decoder = new HspDecoder(1, knownPayloadTypes, knownErrorTypes);
 		ee.expect(HspDecoderException.class);
-		ee.expectMessage("Max length exceeded");
+		ee.expectMessage("Payload-length=3 exceeds max-payload-bytes=1");
 		decoder.decode(ctx, buf, out);
 	}
 
