@@ -1,6 +1,6 @@
 [![Build Status](https://api.travis-ci.org/jarmoni/hsp-netty.svg?branch=master)](https://travis-ci.org/jarmoni/hsp-netty)
 # hsp-netty
-Provides a Java-implementation of the HSP-codec for usage in netty-based servers/clients.
+Provides a Java-implementation of the [HSP](https://github.com/jarmoni/hsp-spec)-codec for usage in netty-based servers/clients.
 
 ## Requirements
 - Java 8
