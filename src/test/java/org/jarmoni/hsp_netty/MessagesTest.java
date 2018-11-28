@@ -12,6 +12,7 @@ import org.jarmoni.hsp_netty.Messages.ErrorMessage;
 import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
 import org.jarmoni.hsp_netty.Messages.PingMessage;
 import org.jarmoni.hsp_netty.Messages.PongMessage;
+import org.jarmoni.hsp_netty.Types.HspCommandType;
 import org.jarmoni.hsp_netty.Types.HspErrorType;
 import org.jarmoni.hsp_netty.Types.HspPayloadType;
 import org.junit.Test;
@@ -22,8 +23,8 @@ import io.netty.buffer.Unpooled;
 
 public class MessagesTest {
 
-	private final HspPayloadType payloadType = new HspPayloadType(0x99, "some desc");
-	private final HspErrorType errorType = new HspErrorType(0x98, "some err");
+	private final HspPayloadType payloadType = new HspPayloadType((byte) 0x99, "some desc");
+	private final HspErrorType errorType = new HspErrorType((byte) 0x98, "some err");
 	private final ByteBuf msgId = Unpooled.copiedBuffer(ByteBufUtil.decodeHexDump("f001"));
 	private final ByteBuf payload = Unpooled.copiedBuffer("xyz".getBytes(StandardCharsets.UTF_8));
 
@@ -32,11 +33,10 @@ public class MessagesTest {
 		final DataMessage msg = new DataMessage(payloadType, payload);
 		final ByteBuf serialized = Unpooled.buffer();
 		msg.toBytes(serialized);
-		assertThat(serialized.readableBytes(), is(7));
-		assertThat(serialized.readByte(), is((byte) 0));
-		assertThat(serialized.readByte(), is(payloadType.getVarintValue()[0]));
-		assertThat(serialized.readByte(), is((byte) 1));
-		assertThat(serialized.readByte(), is((byte) 3));
+		assertThat(serialized.readableBytes(), is(10));
+		assertThat(serialized.readByte(), is(HspCommandType.DataCommand.byteValue()));
+		assertThat(serialized.readShort(), is(payloadType.getShortValue()));
+		assertThat(serialized.readInt(), is(payload.readableBytes()));
 		assertThat(ByteBufUtil.hashCode(serialized.readBytes(3)), is(ByteBufUtil.hashCode(payload)));
 
 		// check that reader indexes in Message are NOT modified.

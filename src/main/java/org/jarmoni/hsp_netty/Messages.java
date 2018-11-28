@@ -43,27 +43,27 @@ public class Messages {
 		@Override
 		// TODO What about using CompositeBuffer here?
 		public void toBytes(final ByteBuf buf) {
-			buf.writeBytes(commandType.varintValue());
-			buf.writeBytes(payloadType.getVarintValue());
-			Varint.varintFromInt(buf, payload.readableBytes());
+			buf.writeByte(commandType.byteValue());
+			buf.writeShort(payloadType.getShortValue());
+			buf.writeInt(payload.readableBytes());
 			// We cannot use method #writeBytes(ByteBuf payload) because this. will alter the reader index of source
 			buf.writeBytes(payload, 0, payload.readableBytes());
 		}
 	}
 
 	public static class DataAckMessage extends HspMessage {
-		private final ByteBuf messageId;
+		private final int messageId;
 		private final HspPayloadType payloadType;
 		private final ByteBuf payload;
 
-		public DataAckMessage(final ByteBuf messageId, final HspPayloadType payloadType, final ByteBuf payload) {
+		public DataAckMessage(final int messageId, final HspPayloadType payloadType, final ByteBuf payload) {
 			super(HspCommandType.DataAckCommand);
 			this.messageId = messageId;
 			this.payloadType = payloadType;
 			this.payload = payload;
 		}
 
-		public ByteBuf getMessageId() {
+		public int getMessageId() {
 			return messageId;
 		}
 
@@ -77,10 +77,10 @@ public class Messages {
 
 		@Override
 		public void toBytes(final ByteBuf buf) {
-			buf.writeBytes(commandType.varintValue());
-			buf.writeBytes(messageId, 0, messageId.readableBytes());
-			buf.writeBytes(payloadType.getVarintValue());
-			Varint.varintFromInt(buf, payload.readableBytes());
+			buf.writeByte(commandType.byteValue());
+			buf.writeInt(messageId);
+			buf.writeShort(payloadType.getShortValue());
+			buf.writeInt(payload.readableBytes());
 			buf.writeBytes(payload, 0, payload.readableBytes());
 		}
 	}
@@ -99,24 +99,46 @@ public class Messages {
 
 		@Override
 		public void toBytes(final ByteBuf buf) {
-			buf.writeBytes(commandType.varintValue());
+			buf.writeByte(commandType.byteValue());
 			buf.writeBytes(messageId, 0, messageId.readableBytes());
 		}
 	}
 
+	public static class PingMessage extends HspMessage {
+		public PingMessage() {
+			super(HspCommandType.PingCommand);
+		}
+
+		@Override
+		public void toBytes(final ByteBuf buf) {
+			buf.writeByte(commandType.byteValue());
+		}
+	}
+
+	public static class PongMessage extends HspMessage {
+		public PongMessage() {
+			super(HspCommandType.PongCommand);
+		}
+
+		@Override
+		public void toBytes(final ByteBuf buf) {
+			buf.writeByte(commandType.byteValue());
+		}
+	}
+
 	public static class ErrorMessage extends HspMessage {
-		private final ByteBuf messageId;
+		private final int messageId;
 		private final HspErrorType errorType;
 		private final ByteBuf payload;
 
-		public ErrorMessage(final ByteBuf messageId, final HspErrorType payloadType, final ByteBuf payload) {
+		public ErrorMessage(final int messageId, final HspErrorType payloadType, final ByteBuf payload) {
 			super(HspCommandType.ErrorCommand);
 			this.messageId = messageId;
 			this.errorType = payloadType;
 			this.payload = payload;
 		}
 
-		public ByteBuf getMessageId() {
+		public int getMessageId() {
 			return messageId;
 		}
 
@@ -130,33 +152,11 @@ public class Messages {
 
 		@Override
 		public void toBytes(final ByteBuf buf) {
-			buf.writeBytes(commandType.varintValue());
-			buf.writeBytes(messageId, 0, messageId.readableBytes());
-			buf.writeBytes(errorType.getVarintValue());
-			Varint.varintFromInt(buf, payload.readableBytes());
+			buf.writeByte(commandType.byteValue());
+			buf.writeInt(messageId);
+			buf.writeShort(errorType.getShortValue());
+			buf.writeInt(payload.readableBytes());
 			buf.writeBytes(payload, 0, payload.readableBytes());
-		}
-	}
-
-	public static class PingMessage extends HspMessage {
-		public PingMessage() {
-			super(HspCommandType.PingCommand);
-		}
-
-		@Override
-		public void toBytes(final ByteBuf buf) {
-			buf.writeBytes(commandType.varintValue());
-		}
-	}
-
-	public static class PongMessage extends HspMessage {
-		public PongMessage() {
-			super(HspCommandType.PongCommand);
-		}
-
-		@Override
-		public void toBytes(final ByteBuf buf) {
-			buf.writeBytes(commandType.varintValue());
 		}
 	}
 
@@ -174,7 +174,7 @@ public class Messages {
 
 		@Override
 		public void toBytes(final ByteBuf buf) {
-			buf.writeBytes(commandType.varintValue());
+			buf.writeByte(commandType.byteValue());
 			buf.writeBytes(messageId, 0, messageId.readableBytes());
 		}
 	}
