@@ -37,11 +37,11 @@ public class HspDecoderTest {
 	@Rule
 	public ExpectedException ee = ExpectedException.none();
 
-	private final HspPayloadType payloadType = new HspPayloadType(0x99, "some desc");
-	private final HspErrorType errorType = new HspErrorType(0x98, "some err");
-	private Map<Integer, HspPayloadType> knownPayloadTypes;
-	private Map<Integer, HspErrorType> knownErrorTypes;
-	private final ByteBuf msgId = Unpooled.copiedBuffer(ByteBufUtil.decodeHexDump("f001"));
+	private final HspPayloadType payloadType = new HspPayloadType((short) 0x99, "some desc");
+	private final HspErrorType errorType = new HspErrorType((short) 0x98, "some err");
+	private Map<Short, HspPayloadType> knownPayloadTypes;
+	private Map<Short, HspErrorType> knownErrorTypes;
+	private final int msgId = 0xf001;
 	private final ByteBuf payload = Unpooled.copiedBuffer("xyz".getBytes(StandardCharsets.UTF_8));
 
 	private final Channel channel = mock(Channel.class);
@@ -52,9 +52,9 @@ public class HspDecoderTest {
 	@Before
 	public void setUp() throws Exception {
 		knownPayloadTypes = new HashMap<>();
-		knownPayloadTypes.put(Integer.valueOf(payloadType.getIntValue()), payloadType);
+		knownPayloadTypes.put(payloadType.getShortValue(), payloadType);
 		knownErrorTypes = new HashMap<>();
-		knownErrorTypes.put(Integer.valueOf(errorType.getIntValue()), errorType);
+		knownErrorTypes.put(errorType.getShortValue(), errorType);
 		decoder = new HspDecoder(knownPayloadTypes, knownErrorTypes);
 		out = new ArrayList<>();
 		when(ctx.channel()).thenReturn(channel);
@@ -97,7 +97,7 @@ public class HspDecoderTest {
 		assertThat(out.get(0), is(instanceOf(DataAckMessage.class)));
 		final DataAckMessage msg = (DataAckMessage) out.get(0);
 		assertThat(msg.getCommandType(), is(dataAckMessage.getCommandType()));
-		assertThat(ByteBufUtil.hashCode(msg.getMessageId()), is(ByteBufUtil.hashCode(msgId)));
+		assertThat(msg.getMessageId(), is(msgId));
 		assertThat(msg.getPayloadType(), is(dataAckMessage.getPayloadType()));
 		assertThat(ByteBufUtil.hashCode(msg.getPayload()), is(ByteBufUtil.hashCode(payload)));
 	}
@@ -112,22 +112,7 @@ public class HspDecoderTest {
 		assertThat(out.get(0), is(instanceOf(AckMessage.class)));
 		final AckMessage msg = (AckMessage) out.get(0);
 		assertThat(msg.getCommandType(), is(msg.getCommandType()));
-		assertThat(ByteBufUtil.hashCode(msg.getMessageId()), is(ByteBufUtil.hashCode(msgId)));
-	}
-
-	@Test
-	public void testErrorCommandToErrorMessage() throws Exception {
-		final ErrorMessage errorMessage = new ErrorMessage(msgId, errorType, payload);
-		final ByteBuf buf = Unpooled.buffer();
-		errorMessage.toBytes(buf);
-		decoder.decode(ctx, buf, out);
-		assertThat(out.size(), is(1));
-		assertThat(out.get(0), is(instanceOf(ErrorMessage.class)));
-		final ErrorMessage msg = (ErrorMessage) out.get(0);
-		assertThat(msg.getCommandType(), is(errorMessage.getCommandType()));
-		assertThat(ByteBufUtil.hashCode(msg.getMessageId()), is(ByteBufUtil.hashCode(msgId)));
-		assertThat(msg.getErrorType(), is(errorMessage.getErrorType()));
-		assertThat(ByteBufUtil.hashCode(msg.getPayload()), is(ByteBufUtil.hashCode(payload)));
+		assertThat(msg.getMessageId(), is(msgId));
 	}
 
 	@Test
@@ -155,6 +140,21 @@ public class HspDecoderTest {
 	}
 
 	@Test
+	public void testErrorCommandToErrorMessage() throws Exception {
+		final ErrorMessage errorMessage = new ErrorMessage(msgId, errorType, payload);
+		final ByteBuf buf = Unpooled.buffer();
+		errorMessage.toBytes(buf);
+		decoder.decode(ctx, buf, out);
+		assertThat(out.size(), is(1));
+		assertThat(out.get(0), is(instanceOf(ErrorMessage.class)));
+		final ErrorMessage msg = (ErrorMessage) out.get(0);
+		assertThat(msg.getCommandType(), is(errorMessage.getCommandType()));
+		assertThat(msg.getMessageId(), is(msgId));
+		assertThat(msg.getErrorType(), is(errorMessage.getErrorType()));
+		assertThat(ByteBufUtil.hashCode(msg.getPayload()), is(ByteBufUtil.hashCode(payload)));
+	}
+
+	@Test
 	public void testErrorUndefCommandToErrorUndefMessage() throws Exception {
 		final ErrorUndefMessage errorUndefMessage = new ErrorUndefMessage(msgId);
 		final ByteBuf buf = Unpooled.buffer();
@@ -164,6 +164,6 @@ public class HspDecoderTest {
 		assertThat(out.get(0), is(instanceOf(ErrorUndefMessage.class)));
 		final ErrorUndefMessage msg = (ErrorUndefMessage) out.get(0);
 		assertThat(msg.getCommandType(), is(errorUndefMessage.getCommandType()));
-		assertThat(ByteBufUtil.hashCode(msg.getMessageId()), is(ByteBufUtil.hashCode(msgId)));
+		assertThat(msg.getMessageId(), is(msgId));
 	}
 }

@@ -25,8 +25,8 @@ public class Types {
 			return byteValue;
 		}
 
-		public static Optional<HspCommandType> byShortValue(final byte shortValue) {
-			return ELEM_MAP.get(shortValue) != null ? Optional.of(ELEM_MAP.get(shortValue)) : Optional.empty();
+		public static Optional<HspCommandType> byByteValue(final byte byteValue) {
+			return ELEM_MAP.get(byteValue) != null ? Optional.of(ELEM_MAP.get(byteValue)) : Optional.empty();
 		}
 
 		@Override
@@ -69,7 +69,7 @@ public class Types {
 			this.description = description;
 		}
 
-		public int getShortValue() {
+		public short getShortValue() {
 			return shortValue;
 		}
 

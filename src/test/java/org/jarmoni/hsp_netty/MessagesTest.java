@@ -25,7 +25,7 @@ public class MessagesTest {
 
 	private final HspPayloadType payloadType = new HspPayloadType((byte) 0x99, "some desc");
 	private final HspErrorType errorType = new HspErrorType((byte) 0x98, "some err");
-	private final ByteBuf msgId = Unpooled.copiedBuffer(ByteBufUtil.decodeHexDump("f001"));
+	private final int msgId = 0xffeeddcc;
 	private final ByteBuf payload = Unpooled.copiedBuffer("xyz".getBytes(StandardCharsets.UTF_8));
 
 	@Test
@@ -48,17 +48,14 @@ public class MessagesTest {
 		final DataAckMessage msg = new DataAckMessage(msgId, payloadType, payload);
 		final ByteBuf serialized = Unpooled.buffer();
 		msg.toBytes(serialized);
-		assertThat(serialized.readableBytes(), is(9));
-		assertThat(serialized.readByte(), is((byte) 1));
-		assertThat(serialized.readByte(), is((byte) 0xF0));
-		assertThat(serialized.readByte(), is((byte) 1));
-		assertThat(serialized.readByte(), is(payloadType.getVarintValue()[0]));
-		assertThat(serialized.readByte(), is((byte) 1));
-		assertThat(serialized.readByte(), is((byte) 3));
+		assertThat(serialized.readableBytes(), is(14));
+		assertThat(serialized.readByte(), is(HspCommandType.DataAckCommand.byteValue()));
+		assertThat(serialized.readInt(), is(msgId));
+		assertThat(serialized.readShort(), is(payloadType.getShortValue()));
+		assertThat(serialized.readInt(), is(payload.readableBytes()));
 		assertThat(ByteBufUtil.hashCode(serialized.readBytes(3)), is(ByteBufUtil.hashCode(payload)));
 
 		assertThat(msg.getPayload().readerIndex(), is(0));
-		assertThat(msg.getMessageId().readerIndex(), is(0));
 	}
 
 	@Test
@@ -66,30 +63,9 @@ public class MessagesTest {
 		final AckMessage msg = new AckMessage(msgId);
 		final ByteBuf serialized = Unpooled.buffer();
 		msg.toBytes(serialized);
-		assertThat(serialized.readableBytes(), is(3));
-		assertThat(serialized.readByte(), is((byte) 2));
-		assertThat(serialized.readByte(), is((byte) 0xF0));
-		assertThat(serialized.readByte(), is((byte) 1));
-
-		assertThat(msg.getMessageId().readerIndex(), is(0));
-	}
-
-	@Test
-	public void testErrorMessage() throws Exception {
-		final ErrorMessage msg = new ErrorMessage(msgId, errorType, payload);
-		final ByteBuf serialized = Unpooled.buffer();
-		msg.toBytes(serialized);
-		assertThat(serialized.readableBytes(), is(9));
-		assertThat(serialized.readByte(), is((byte) 3));
-		assertThat(serialized.readByte(), is((byte) 0xF0));
-		assertThat(serialized.readByte(), is((byte) 1));
-		assertThat(serialized.readByte(), is(errorType.getVarintValue()[0]));
-		assertThat(serialized.readByte(), is((byte) 1));
-		assertThat(serialized.readByte(), is((byte) 3));
-		assertThat(ByteBufUtil.hashCode(serialized.readBytes(3)), is(ByteBufUtil.hashCode(payload)));
-
-		assertThat(msg.getPayload().readerIndex(), is(0));
-		assertThat(msg.getMessageId().readerIndex(), is(0));
+		assertThat(serialized.readableBytes(), is(5));
+		assertThat(serialized.readByte(), is(HspCommandType.AckCommand.byteValue()));
+		assertThat(serialized.readInt(), is(msgId));
 	}
 
 	@Test
@@ -98,7 +74,7 @@ public class MessagesTest {
 		final ByteBuf serialized = Unpooled.buffer();
 		msg.toBytes(serialized);
 		assertThat(serialized.readableBytes(), is(1));
-		assertThat(serialized.readByte(), is((byte) 4));
+		assertThat(serialized.readByte(), is(HspCommandType.PingCommand.byteValue()));
 	}
 
 	@Test
@@ -107,7 +83,22 @@ public class MessagesTest {
 		final ByteBuf serialized = Unpooled.buffer();
 		msg.toBytes(serialized);
 		assertThat(serialized.readableBytes(), is(1));
-		assertThat(serialized.readByte(), is((byte) 5));
+		assertThat(serialized.readByte(), is(HspCommandType.PongCommand.byteValue()));
+	}
+
+	@Test
+	public void testErrorMessage() throws Exception {
+		final ErrorMessage msg = new ErrorMessage(msgId, errorType, payload);
+		final ByteBuf serialized = Unpooled.buffer();
+		msg.toBytes(serialized);
+		assertThat(serialized.readableBytes(), is(14));
+		assertThat(serialized.readByte(), is(HspCommandType.ErrorCommand.byteValue()));
+		assertThat(serialized.readInt(), is(msgId));
+		assertThat(serialized.readShort(), is(errorType.getShortValue()));
+		assertThat(serialized.readInt(), is(payload.readableBytes()));
+		assertThat(ByteBufUtil.hashCode(serialized.readBytes(3)), is(ByteBufUtil.hashCode(payload)));
+
+		assertThat(msg.getPayload().readerIndex(), is(0));
 	}
 
 	@Test
@@ -115,12 +106,9 @@ public class MessagesTest {
 		final ErrorUndefMessage msg = new ErrorUndefMessage(msgId);
 		final ByteBuf serialized = Unpooled.buffer();
 		msg.toBytes(serialized);
-		assertThat(serialized.readableBytes(), is(3));
-		assertThat(serialized.readByte(), is((byte) 6));
-		assertThat(serialized.readByte(), is((byte) 0xF0));
-		assertThat(serialized.readByte(), is((byte) 1));
-
-		assertThat(msg.getMessageId().readerIndex(), is(0));
+		assertThat(serialized.readableBytes(), is(5));
+		assertThat(serialized.readByte(), is(HspCommandType.ErrorUndefCommand.byteValue()));
+		assertThat(serialized.readInt(), is(msgId));
 	}
 
 }

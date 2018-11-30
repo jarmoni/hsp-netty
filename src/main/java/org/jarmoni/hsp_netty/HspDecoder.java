@@ -1,8 +1,5 @@
 package org.jarmoni.hsp_netty;
 
-import static org.jarmoni.hsp_netty.Varint.calcRequiredVarintBytes;
-import static org.jarmoni.hsp_netty.Varint.getVarintBytes;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,22 +26,20 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	private static final Logger LOG = LoggerFactory.getLogger(HspDecoder.class);
 
 	private static final int MAX_PAYLOAD_BYTES_DEFAULT = 8192;
-	private final int maxMessageIdVarintBytes = calcRequiredVarintBytes(4);
 	private final int maxPayloadBytes;
-	private final Map<Integer, HspPayloadType> knownPayloadTypes;
-	private final Map<Integer, HspErrorType> knownErrorTypes;
+	private final Map<Short, HspPayloadType> knownPayloadTypes;
+	private final Map<Short, HspErrorType> knownErrorTypes;
 	private CurrentFields currentFields;
 
-	public HspDecoder(final Map<Integer, HspPayloadType> knownPayloadTypes, final Map<Integer, HspErrorType> knownErrorTypes) {
+	public HspDecoder(final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
 		this(MAX_PAYLOAD_BYTES_DEFAULT, knownPayloadTypes, knownErrorTypes);
 	}
 
-	public HspDecoder(final int maxPayloadBytes, final Map<Integer, HspPayloadType> knownPayloadTypes, final Map<Integer, HspErrorType> knownErrorTypes) {
+	public HspDecoder(final int maxPayloadBytes, final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
 		this(DecoderState.READ_COMMAND, maxPayloadBytes, knownPayloadTypes, knownErrorTypes);
 	}
 
-	public HspDecoder(final DecoderState startState, final int maxPayloadBytes, final Map<Integer, HspPayloadType> knownPayloadTypes,
-			final Map<Integer, HspErrorType> knownErrorTypes) {
+	public HspDecoder(final DecoderState startState, final int maxPayloadBytes, final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
 		super(startState);
 		this.maxPayloadBytes = maxPayloadBytes;
 		this.currentFields = new CurrentFields();
@@ -92,14 +87,14 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	}
 
 	private void readCommand(final ChannelHandlerContext ctx, final ByteBuf buffer, final List<Object> out) {
-		int command = -1;
+		byte command = -1;
 		try {
-			command = Varint.intFromVarint(buffer);
+			command = buffer.readByte();
 		} catch (final Exception e) {
 			stateError(new HspDecoderException("Parsing of (command-) Varint failed"));
 			return;
 		}
-		final Optional<HspCommandType> cmdTypeOpt = HspCommandType.byIntValue(command);
+		final Optional<HspCommandType> cmdTypeOpt = HspCommandType.byByteValue(command);
 		if (!cmdTypeOpt.isPresent()) {
 			stateError(new HspDecoderException("Not existing command=" + command));
 			return;
@@ -141,9 +136,9 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 
 	private void readPayloadType(final ChannelHandlerContext ctx, final ByteBuf buffer, final List<Object> out) {
 		checkpoint(DecoderState.READ_PAYLOAD_TYPE);
-		int payloadType = -1;
+		short payloadType = -1;
 		try {
-			payloadType = Varint.intFromVarint(buffer);
+			payloadType = buffer.readShort();
 		} catch (final Exception e) {
 			stateError(new HspDecoderException("Parsing of (payload-type-) Varint failed"));
 			return;
@@ -158,9 +153,9 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 
 	private void readErrorType(final ChannelHandlerContext ctx, final ByteBuf buffer, final List<Object> out) {
 		checkpoint(DecoderState.READ_ERROR_TYPE);
-		int errorType = -1;
+		short errorType = -1;
 		try {
-			errorType = Varint.intFromVarint(buffer);
+			errorType = buffer.readShort();
 		} catch (final Exception e) {
 			stateError(new HspDecoderException("Parsing of (error-type-) Varint failed"));
 			return;
@@ -177,7 +172,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		checkpoint(DecoderState.READ_PAYLOAD_LENGTH);
 		int payloadLength = -1;
 		try {
-			payloadLength = Varint.intFromVarint(buffer);
+			payloadLength = buffer.readInt();
 		} catch (final Exception e) {
 			stateError(new HspDecoderException("Parsing of (payload-length-) Varint failed"));
 			return;
@@ -211,9 +206,9 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 
 	private void readMessageId(final ChannelHandlerContext ctx, final ByteBuf buffer, final List<Object> out) {
 		checkpoint(DecoderState.READ_MESSAGE_ID);
-		ByteBuf msgId = null;
+		int msgId = -1;
 		try {
-			msgId = getVarintBytes(buffer, maxMessageIdVarintBytes);
+			msgId = buffer.readInt();
 		} catch (final Exception e) {
 			stateError(new HspDecoderException("Parsing of (messageId-) Varint failed"));
 			return;
@@ -350,7 +345,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 		public Optional<HspErrorType> errorType = Optional.empty();
 		public Optional<Integer> payloadLength = Optional.empty();
 		public Optional<ByteBuf> payload = Optional.empty();
-		public Optional<ByteBuf> messageId = Optional.empty();
+		public Optional<Integer> messageId = Optional.empty();
 	}
 
 	enum DecoderState {

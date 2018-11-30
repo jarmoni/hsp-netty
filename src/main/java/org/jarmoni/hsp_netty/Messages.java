@@ -86,21 +86,21 @@ public class Messages {
 	}
 
 	public static class AckMessage extends HspMessage {
-		private final ByteBuf messageId;
+		private final int messageId;
 
-		public AckMessage(final ByteBuf messageId) {
+		public AckMessage(final int messageId) {
 			super(HspCommandType.AckCommand);
 			this.messageId = messageId;
 		}
 
-		public ByteBuf getMessageId() {
+		public int getMessageId() {
 			return messageId;
 		}
 
 		@Override
 		public void toBytes(final ByteBuf buf) {
 			buf.writeByte(commandType.byteValue());
-			buf.writeBytes(messageId, 0, messageId.readableBytes());
+			buf.writeInt(messageId);
 		}
 	}
 
@@ -161,21 +161,21 @@ public class Messages {
 	}
 
 	public static class ErrorUndefMessage extends HspMessage {
-		private final ByteBuf messageId;
+		private final int messageId;
 
-		public ErrorUndefMessage(final ByteBuf messageId) {
+		public ErrorUndefMessage(final int messageId) {
 			super(HspCommandType.ErrorUndefCommand);
 			this.messageId = messageId;
 		}
 
-		public ByteBuf getMessageId() {
+		public int getMessageId() {
 			return messageId;
 		}
 
 		@Override
 		public void toBytes(final ByteBuf buf) {
 			buf.writeByte(commandType.byteValue());
-			buf.writeBytes(messageId, 0, messageId.readableBytes());
+			buf.writeInt(messageId);
 		}
 	}
 }
