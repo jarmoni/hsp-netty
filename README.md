@@ -7,5 +7,4 @@ Provides a Java-implementation of the [HSP](https://github.com/jarmoni/hsp-spec)
 - Java >8 not supported atm.
 
 ## Known limitations
-- No support for 128-Bit messageId's. Upper limit is 32 Bit (should be sufficient for most use-cases)
 - Decoder uses Netty's [ReplayingDecoder](https://github.com/netty/netty/blob/4.1/codec/src/main/java/io/netty/handler/codec/ReplayingDecoder.java) which is a convenient but (with regard to performance) maybe not the best solution.
