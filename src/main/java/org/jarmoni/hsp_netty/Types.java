@@ -36,6 +36,7 @@ public class Types {
 	}
 
 	public static class HspPayloadType {
+
 		private final short shortValue;
 		private final String description;
 
@@ -51,6 +52,34 @@ public class Types {
 
 		public String getDescription() {
 			return description;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((description == null) ? 0 : description.hashCode());
+			result = prime * result + shortValue;
+			return result;
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			final HspPayloadType other = (HspPayloadType) obj;
+			if (description == null) {
+				if (other.description != null)
+					return false;
+			} else if (!description.equals(other.description))
+				return false;
+			if (shortValue != other.shortValue)
+				return false;
+			return true;
 		}
 
 		@Override
