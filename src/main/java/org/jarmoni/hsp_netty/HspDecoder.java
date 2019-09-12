@@ -2,6 +2,7 @@ package org.jarmoni.hsp_netty;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.jarmoni.hsp_netty.Messages.AckMessage;
@@ -31,10 +32,18 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	private final Map<Short, HspErrorType> knownErrorTypes;
 	private CurrentFields currentFields;
 
+	public HspDecoder() {
+		this(MAX_PAYLOAD_BYTES_DEFAULT, new HashMap<>(), new HashMap<>());
+	}
+	
 	public HspDecoder(final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
 		this(MAX_PAYLOAD_BYTES_DEFAULT, knownPayloadTypes, knownErrorTypes);
 	}
 
+	public HspDecoder(final int maxPayloadBytes) {
+		this(maxPayloadBytes, new HashMap<>(), new HashMap<>());
+	}
+	
 	public HspDecoder(final int maxPayloadBytes, final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
 		this(DecoderState.READ_COMMAND, maxPayloadBytes, knownPayloadTypes, knownErrorTypes);
 	}
