@@ -143,7 +143,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			stateError(new HspDecoderException("Parsing of (payload-type-) Varint failed"));
 			return;
 		}
-		if (!knownPayloadTypes.containsKey(payloadType)) {
+		if (!knownPayloadTypes.isEmpty() && !knownPayloadTypes.containsKey(payloadType)) {
 			stateError(new HspDecoderException("Invalid payload-type=" + payloadType));
 			return;
 		}
@@ -160,7 +160,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			stateError(new HspDecoderException("Parsing of (error-type-) Varint failed"));
 			return;
 		}
-		if (!knownErrorTypes.containsKey(errorType)) {
+		if (!knownErrorTypes.isEmpty() && !knownErrorTypes.containsKey(errorType)) {
 			stateError(new HspDecoderException("Invalid error-type=" + errorType));
 			return;
 		}
