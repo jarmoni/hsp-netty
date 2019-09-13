@@ -1,8 +1,8 @@
 package org.jarmoni.hsp_netty;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Optional;
 
 import org.jarmoni.hsp_netty.Messages.AckMessage;
@@ -35,7 +35,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	public HspDecoder() {
 		this(MAX_PAYLOAD_BYTES_DEFAULT, new HashMap<>(), new HashMap<>());
 	}
-	
+
 	public HspDecoder(final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
 		this(MAX_PAYLOAD_BYTES_DEFAULT, knownPayloadTypes, knownErrorTypes);
 	}
@@ -43,12 +43,13 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 	public HspDecoder(final int maxPayloadBytes) {
 		this(maxPayloadBytes, new HashMap<>(), new HashMap<>());
 	}
-	
+
 	public HspDecoder(final int maxPayloadBytes, final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
 		this(DecoderState.READ_COMMAND, maxPayloadBytes, knownPayloadTypes, knownErrorTypes);
 	}
 
-	public HspDecoder(final DecoderState startState, final int maxPayloadBytes, final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
+	public HspDecoder(final DecoderState startState, final int maxPayloadBytes, final Map<Short, HspPayloadType> knownPayloadTypes,
+			final Map<Short, HspErrorType> knownErrorTypes) {
 		super(startState);
 		this.maxPayloadBytes = maxPayloadBytes;
 		this.currentFields = new CurrentFields();
@@ -156,7 +157,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			stateError(new HspDecoderException("Invalid payload-type=" + payloadType));
 			return;
 		}
-		currentFields.payloadType = Optional.of(knownPayloadTypes.get(payloadType));
+		currentFields.payloadType = !knownPayloadTypes.isEmpty() ? Optional.of(knownPayloadTypes.get(payloadType)) : Optional.of(new HspPayloadType(payloadType, Optional.empty()));
 		readPayloadLength(ctx, buffer, out);
 	}
 
@@ -173,7 +174,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			stateError(new HspDecoderException("Invalid error-type=" + errorType));
 			return;
 		}
-		currentFields.errorType = Optional.of(knownErrorTypes.get(errorType));
+		currentFields.errorType = !knownErrorTypes.isEmpty() ? Optional.of(knownErrorTypes.get(errorType)) : Optional.of(new HspErrorType(errorType, Optional.empty()));
 		readPayloadLength(ctx, buffer, out);
 	}
 

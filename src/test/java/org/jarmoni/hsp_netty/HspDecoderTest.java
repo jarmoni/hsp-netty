@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.jarmoni.hsp_netty.HspDecoder.HspDecoderException;
 import org.jarmoni.hsp_netty.Messages.AckMessage;
@@ -37,8 +38,8 @@ public class HspDecoderTest {
 	@Rule
 	public ExpectedException ee = ExpectedException.none();
 
-	private final HspPayloadType payloadType = new HspPayloadType((short) 0x99, "some desc");
-	private final HspErrorType errorType = new HspErrorType((short) 0x98, "some err");
+	private final HspPayloadType payloadType = new HspPayloadType((short) 0x99, Optional.of("some desc"));
+	private final HspErrorType errorType = new HspErrorType((short) 0x98, Optional.of("some err"));
 	private Map<Short, HspPayloadType> knownPayloadTypes;
 	private Map<Short, HspErrorType> knownErrorTypes;
 	private final int msgId = 0xf001;

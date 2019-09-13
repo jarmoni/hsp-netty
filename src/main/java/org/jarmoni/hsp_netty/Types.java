@@ -38,9 +38,9 @@ public class Types {
 	public static class HspPayloadType {
 
 		private final short shortValue;
-		private final String description;
+		private final Optional<String> description;
 
-		public HspPayloadType(final short id, final String description) {
+		public HspPayloadType(final short id, final Optional<String> description) {
 			super();
 			this.shortValue = id;
 			this.description = description;
@@ -50,7 +50,7 @@ public class Types {
 			return shortValue;
 		}
 
-		public String getDescription() {
+		public Optional<String> getDescription() {
 			return description;
 		}
 
@@ -90,9 +90,9 @@ public class Types {
 
 	public static class HspErrorType {
 		private final short shortValue;
-		private final String description;
+		private final Optional<String> description;
 
-		public HspErrorType(final short id, final String description) {
+		public HspErrorType(final short id, final Optional<String> description) {
 			super();
 			this.shortValue = id;
 			this.description = description;
@@ -102,7 +102,7 @@ public class Types {
 			return shortValue;
 		}
 
-		public String getDescription() {
+		public Optional<String> getDescription() {
 			return description;
 		}
 

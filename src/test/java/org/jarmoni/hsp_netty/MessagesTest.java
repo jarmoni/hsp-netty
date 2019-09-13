@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import org.jarmoni.hsp_netty.Messages.AckMessage;
 import org.jarmoni.hsp_netty.Messages.DataAckMessage;
@@ -23,8 +24,8 @@ import io.netty.buffer.Unpooled;
 
 public class MessagesTest {
 
-	private final HspPayloadType payloadType = new HspPayloadType((byte) 0x99, "some desc");
-	private final HspErrorType errorType = new HspErrorType((byte) 0x98, "some err");
+	private final HspPayloadType payloadType = new HspPayloadType((byte) 0x99, Optional.of("some desc"));
+	private final HspErrorType errorType = new HspErrorType((byte) 0x98, Optional.of("some err"));
 	private final int msgId = 0xffeeddcc;
 	private final ByteBuf payload = Unpooled.copiedBuffer("xyz".getBytes(StandardCharsets.UTF_8));
 
