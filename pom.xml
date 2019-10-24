@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.jarmoni</groupId>
 	<artifactId>hsp-netty</artifactId>
-	<version>1.1.0</version>
+	<version>1.2.0-SNAPSHOT</version>
 	<name>${project.artifactId}</name>
 	<description>HSP implementation in Java</description>
 	<url>https://github.com/jarmoni/hsp-netty</url>
