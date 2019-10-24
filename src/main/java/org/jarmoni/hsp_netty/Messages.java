@@ -1,8 +1,6 @@
 package org.jarmoni.hsp_netty;
 
 import org.jarmoni.hsp_netty.Types.HspCommandType;
-import org.jarmoni.hsp_netty.Types.HspErrorType;
-import org.jarmoni.hsp_netty.Types.HspPayloadType;
 
 import io.netty.buffer.ByteBuf;
 
@@ -23,16 +21,16 @@ public class Messages {
 	}
 
 	public static class DataMessage extends HspMessage {
-		private final HspPayloadType payloadType;
+		private final short payloadType;
 		private final ByteBuf payload;
 
-		public DataMessage(final HspPayloadType payloadType, final ByteBuf payload) {
+		public DataMessage(final short payloadType, final ByteBuf payload) {
 			super(HspCommandType.DataCommand);
 			this.payloadType = payloadType;
 			this.payload = payload;
 		}
 
-		public HspPayloadType getPayloadType() {
+		public short getPayloadType() {
 			return payloadType;
 		}
 
@@ -44,7 +42,7 @@ public class Messages {
 		// TODO What about using CompositeBuffer here?
 		public void toBytes(final ByteBuf buf) {
 			buf.writeByte(commandType.byteValue());
-			buf.writeShort(payloadType.getShortValue());
+			buf.writeShort(payloadType);
 			buf.writeInt(payload.readableBytes());
 			// We cannot use method #writeBytes(ByteBuf payload) because this. will alter the reader index of source
 			buf.writeBytes(payload, 0, payload.readableBytes());
@@ -53,10 +51,10 @@ public class Messages {
 
 	public static class DataAckMessage extends HspMessage {
 		private final int messageId;
-		private final HspPayloadType payloadType;
+		private final short payloadType;
 		private final ByteBuf payload;
 
-		public DataAckMessage(final int messageId, final HspPayloadType payloadType, final ByteBuf payload) {
+		public DataAckMessage(final int messageId, final short payloadType, final ByteBuf payload) {
 			super(HspCommandType.DataAckCommand);
 			this.messageId = messageId;
 			this.payloadType = payloadType;
@@ -67,7 +65,7 @@ public class Messages {
 			return messageId;
 		}
 
-		public HspPayloadType getPayloadType() {
+		public short getPayloadType() {
 			return payloadType;
 		}
 
@@ -79,7 +77,7 @@ public class Messages {
 		public void toBytes(final ByteBuf buf) {
 			buf.writeByte(commandType.byteValue());
 			buf.writeInt(messageId);
-			buf.writeShort(payloadType.getShortValue());
+			buf.writeShort(payloadType);
 			buf.writeInt(payload.readableBytes());
 			buf.writeBytes(payload, 0, payload.readableBytes());
 		}
@@ -128,13 +126,13 @@ public class Messages {
 
 	public static class ErrorMessage extends HspMessage {
 		private final int messageId;
-		private final HspErrorType errorType;
+		private final short errorType;
 		private final ByteBuf payload;
 
-		public ErrorMessage(final int messageId, final HspErrorType payloadType, final ByteBuf payload) {
+		public ErrorMessage(final int messageId, final short errorType, final ByteBuf payload) {
 			super(HspCommandType.ErrorCommand);
 			this.messageId = messageId;
-			this.errorType = payloadType;
+			this.errorType = errorType;
 			this.payload = payload;
 		}
 
@@ -142,7 +140,7 @@ public class Messages {
 			return messageId;
 		}
 
-		public HspErrorType getErrorType() {
+		public short getErrorType() {
 			return errorType;
 		}
 
@@ -154,7 +152,7 @@ public class Messages {
 		public void toBytes(final ByteBuf buf) {
 			buf.writeByte(commandType.byteValue());
 			buf.writeInt(messageId);
-			buf.writeShort(errorType.getShortValue());
+			buf.writeShort(errorType);
 			buf.writeInt(payload.readableBytes());
 			buf.writeBytes(payload, 0, payload.readableBytes());
 		}

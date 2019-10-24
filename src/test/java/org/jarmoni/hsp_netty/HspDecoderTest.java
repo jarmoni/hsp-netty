@@ -8,9 +8,6 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 import org.jarmoni.hsp_netty.HspDecoder.HspDecoderException;
 import org.jarmoni.hsp_netty.Messages.AckMessage;
@@ -20,8 +17,6 @@ import org.jarmoni.hsp_netty.Messages.ErrorMessage;
 import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
 import org.jarmoni.hsp_netty.Messages.PingMessage;
 import org.jarmoni.hsp_netty.Messages.PongMessage;
-import org.jarmoni.hsp_netty.Types.HspErrorType;
-import org.jarmoni.hsp_netty.Types.HspPayloadType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,10 +33,8 @@ public class HspDecoderTest {
 	@Rule
 	public ExpectedException ee = ExpectedException.none();
 
-	private final HspPayloadType payloadType = new HspPayloadType((short) 0x99, Optional.of("some desc"));
-	private final HspErrorType errorType = new HspErrorType((short) 0x98, Optional.of("some err"));
-	private Map<Short, HspPayloadType> knownPayloadTypes;
-	private Map<Short, HspErrorType> knownErrorTypes;
+	private final short payloadType = (short) 0x99;
+	private final short errorType = (short) 0x98;
 	private final int msgId = 0xf001;
 	private final ByteBuf payload = Unpooled.copiedBuffer("xyz".getBytes(StandardCharsets.UTF_8));
 
@@ -52,11 +45,7 @@ public class HspDecoderTest {
 
 	@Before
 	public void setUp() throws Exception {
-		knownPayloadTypes = new HashMap<>();
-		knownPayloadTypes.put(payloadType.getShortValue(), payloadType);
-		knownErrorTypes = new HashMap<>();
-		knownErrorTypes.put(errorType.getShortValue(), errorType);
-		decoder = new HspDecoder(knownPayloadTypes, knownErrorTypes);
+		decoder = new HspDecoder();
 		out = new ArrayList<>();
 		when(ctx.channel()).thenReturn(channel);
 	}
@@ -82,7 +71,7 @@ public class HspDecoderTest {
 		final DataMessage dataMessage = new DataMessage(payloadType, payload);
 		final ByteBuf buf = Unpooled.buffer();
 		dataMessage.toBytes(buf);
-		decoder = new HspDecoder(1, knownPayloadTypes, knownErrorTypes);
+		decoder = new HspDecoder(1);
 		ee.expect(HspDecoderException.class);
 		ee.expectMessage("Payload-length=3 exceeds max-payload-bytes=1");
 		decoder.decode(ctx, buf, out);

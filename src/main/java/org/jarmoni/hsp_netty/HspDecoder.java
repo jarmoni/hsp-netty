@@ -1,8 +1,6 @@
 package org.jarmoni.hsp_netty;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.jarmoni.hsp_netty.Messages.AckMessage;
@@ -13,8 +11,6 @@ import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
 import org.jarmoni.hsp_netty.Messages.PingMessage;
 import org.jarmoni.hsp_netty.Messages.PongMessage;
 import org.jarmoni.hsp_netty.Types.HspCommandType;
-import org.jarmoni.hsp_netty.Types.HspErrorType;
-import org.jarmoni.hsp_netty.Types.HspPayloadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,34 +24,21 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 
 	private static final int MAX_PAYLOAD_BYTES_DEFAULT = 8192;
 	private final int maxPayloadBytes;
-	private final Map<Short, HspPayloadType> knownPayloadTypes;
-	private final Map<Short, HspErrorType> knownErrorTypes;
 	private CurrentFields currentFields;
 
 	public HspDecoder() {
-		this(MAX_PAYLOAD_BYTES_DEFAULT, new HashMap<>(), new HashMap<>());
-	}
-
-	public HspDecoder(final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
-		this(MAX_PAYLOAD_BYTES_DEFAULT, knownPayloadTypes, knownErrorTypes);
+		this(MAX_PAYLOAD_BYTES_DEFAULT);
 	}
 
 	public HspDecoder(final int maxPayloadBytes) {
-		this(maxPayloadBytes, new HashMap<>(), new HashMap<>());
+		this(DecoderState.READ_COMMAND, maxPayloadBytes);
 	}
 
-	public HspDecoder(final int maxPayloadBytes, final Map<Short, HspPayloadType> knownPayloadTypes, final Map<Short, HspErrorType> knownErrorTypes) {
-		this(DecoderState.READ_COMMAND, maxPayloadBytes, knownPayloadTypes, knownErrorTypes);
-	}
-
-	public HspDecoder(final DecoderState startState, final int maxPayloadBytes, final Map<Short, HspPayloadType> knownPayloadTypes,
-			final Map<Short, HspErrorType> knownErrorTypes) {
+	public HspDecoder(final DecoderState startState, final int maxPayloadBytes) {
 		super(startState);
 		this.maxPayloadBytes = maxPayloadBytes;
 		this.currentFields = new CurrentFields();
-		this.knownPayloadTypes = knownPayloadTypes;
-		this.knownErrorTypes = knownErrorTypes;
-		LOG.debug("Initialized with startState={}, maxPayloadBytes={}, knownPayloadTypes={}, knownErrorTypes={}", startState, maxPayloadBytes, knownPayloadTypes, knownErrorTypes);
+		LOG.debug("Initialized with startState={}, maxPayloadBytes={}", startState, maxPayloadBytes);
 	}
 
 	@Override
@@ -153,11 +136,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			stateError(new HspDecoderException("Parsing of (payload-type-) Varint failed"));
 			return;
 		}
-		if (!knownPayloadTypes.isEmpty() && !knownPayloadTypes.containsKey(payloadType)) {
-			stateError(new HspDecoderException("Invalid payload-type=" + payloadType));
-			return;
-		}
-		currentFields.payloadType = !knownPayloadTypes.isEmpty() ? Optional.of(knownPayloadTypes.get(payloadType)) : Optional.of(new HspPayloadType(payloadType, Optional.empty()));
+		currentFields.payloadType = Optional.of(payloadType);
 		readPayloadLength(ctx, buffer, out);
 	}
 
@@ -170,11 +149,7 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 			stateError(new HspDecoderException("Parsing of (error-type-) Varint failed"));
 			return;
 		}
-		if (!knownErrorTypes.isEmpty() && !knownErrorTypes.containsKey(errorType)) {
-			stateError(new HspDecoderException("Invalid error-type=" + errorType));
-			return;
-		}
-		currentFields.errorType = !knownErrorTypes.isEmpty() ? Optional.of(knownErrorTypes.get(errorType)) : Optional.of(new HspErrorType(errorType, Optional.empty()));
+		currentFields.errorType = Optional.of(errorType);
 		readPayloadLength(ctx, buffer, out);
 	}
 
@@ -351,8 +326,8 @@ public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 
 	public static class CurrentFields {
 		public Optional<HspCommandType> command = Optional.empty();
-		public Optional<HspPayloadType> payloadType = Optional.empty();
-		public Optional<HspErrorType> errorType = Optional.empty();
+		public Optional<Short> payloadType = Optional.empty();
+		public Optional<Short> errorType = Optional.empty();
 		public Optional<Integer> payloadLength = Optional.empty();
 		public Optional<ByteBuf> payload = Optional.empty();
 		public Optional<Integer> messageId = Optional.empty();
