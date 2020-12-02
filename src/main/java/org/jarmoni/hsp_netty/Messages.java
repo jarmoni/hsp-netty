@@ -1,5 +1,6 @@
 package org.jarmoni.hsp_netty;
 
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
 import org.jarmoni.hsp_netty.Types.HspCommandType;
 
@@ -9,45 +10,6 @@ import java.util.List;
 import java.util.Optional;
 
 public class Messages {
-
-	public interface ReferenceCountedMessage extends ReferenceCounted {
-		@Override
-		default int refCnt() {
-			return getByteBuf().refCnt();
-		}
-
-		@Override
-		default ReferenceCounted retain() {
-			return getByteBuf().retain();
-		}
-
-		@Override
-		default ReferenceCounted retain(int i) {
-			return getByteBuf().retain(i);
-		}
-
-		@Override
-		default ReferenceCounted touch() {
-			return getByteBuf().touch();
-		}
-
-		@Override
-		default ReferenceCounted touch(Object o) {
-			return getByteBuf().touch(o);
-		}
-
-		@Override
-		default boolean release() {
-			return getByteBuf().release();
-		}
-
-		@Override
-		default boolean release(int i) {
-			return getByteBuf().release(i);
-		}
-
-		ByteBuf getByteBuf();
-	}
 
 	public static abstract class HspMessage {
 		protected HspCommandType commandType;
@@ -61,9 +23,11 @@ public class Messages {
 		}
 
 		public abstract void toBytes(ByteBuf byteStr);
+
+		public void release() {}
 	}
 
-	public static class DataMessage extends HspMessage implements ReferenceCountedMessage {
+	public static class DataMessage extends HspMessage {
 		private final short payloadType;
 		private final ByteBuf payload;
 
@@ -92,12 +56,12 @@ public class Messages {
 		}
 
 		@Override
-		public ByteBuf getByteBuf() {
-			return payload;
+		public void release() {
+			ReferenceCountUtil.release(payload);
 		}
 	}
 
-	public static class DataAckMessage extends HspMessage implements ReferenceCountedMessage {
+	public static class DataAckMessage extends HspMessage {
 		private final int messageId;
 		private final short payloadType;
 		private final ByteBuf payload;
@@ -131,8 +95,8 @@ public class Messages {
 		}
 
 		@Override
-		public ByteBuf getByteBuf() {
-			return payload;
+		public void release() {
+			ReferenceCountUtil.release(payload);
 		}
 	}
 
@@ -177,7 +141,7 @@ public class Messages {
 		}
 	}
 
-	public static class ErrorMessage extends HspMessage implements ReferenceCountedMessage {
+	public static class ErrorMessage extends HspMessage {
 		private final int messageId;
 		private final short errorType;
 		private final ByteBuf payload;
@@ -211,8 +175,8 @@ public class Messages {
 		}
 
 		@Override
-		public ByteBuf getByteBuf() {
-			return payload;
+		public void release() {
+			ReferenceCountUtil.release(payload);
 		}
 	}
 
