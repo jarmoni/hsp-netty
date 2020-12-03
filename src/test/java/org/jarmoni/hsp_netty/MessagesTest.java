@@ -1,23 +1,16 @@
 package org.jarmoni.hsp_netty;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
-import java.nio.charset.StandardCharsets;
-
-import org.jarmoni.hsp_netty.Messages.AckMessage;
-import org.jarmoni.hsp_netty.Messages.DataAckMessage;
-import org.jarmoni.hsp_netty.Messages.DataMessage;
-import org.jarmoni.hsp_netty.Messages.ErrorMessage;
-import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
-import org.jarmoni.hsp_netty.Messages.PingMessage;
-import org.jarmoni.hsp_netty.Messages.PongMessage;
-import org.jarmoni.hsp_netty.Types.HspCommandType;
-import org.junit.Test;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
+import org.jarmoni.hsp_netty.Messages.*;
+import org.jarmoni.hsp_netty.Types.HspCommandType;
+import org.junit.Test;
+
+import java.nio.charset.StandardCharsets;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class MessagesTest {
 

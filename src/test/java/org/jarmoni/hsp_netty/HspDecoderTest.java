@@ -1,32 +1,25 @@
 package org.jarmoni.hsp_netty;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-
-import org.jarmoni.hsp_netty.HspDecoder.HspDecoderException;
-import org.jarmoni.hsp_netty.Messages.AckMessage;
-import org.jarmoni.hsp_netty.Messages.DataAckMessage;
-import org.jarmoni.hsp_netty.Messages.DataMessage;
-import org.jarmoni.hsp_netty.Messages.ErrorMessage;
-import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
-import org.jarmoni.hsp_netty.Messages.PingMessage;
-import org.jarmoni.hsp_netty.Messages.PongMessage;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import org.jarmoni.hsp_netty.HspDecoder.HspDecoderException;
+import org.jarmoni.hsp_netty.Messages.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class HspDecoderTest {
 

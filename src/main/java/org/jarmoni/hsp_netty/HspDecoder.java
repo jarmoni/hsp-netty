@@ -1,22 +1,15 @@
 package org.jarmoni.hsp_netty;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.jarmoni.hsp_netty.Messages.AckMessage;
-import org.jarmoni.hsp_netty.Messages.DataAckMessage;
-import org.jarmoni.hsp_netty.Messages.DataMessage;
-import org.jarmoni.hsp_netty.Messages.ErrorMessage;
-import org.jarmoni.hsp_netty.Messages.ErrorUndefMessage;
-import org.jarmoni.hsp_netty.Messages.PingMessage;
-import org.jarmoni.hsp_netty.Messages.PongMessage;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ReplayingDecoder;
+import org.jarmoni.hsp_netty.Messages.*;
 import org.jarmoni.hsp_netty.Types.HspCommandType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ReplayingDecoder;
+import java.util.List;
+import java.util.Optional;
 
 public class HspDecoder extends ReplayingDecoder<HspDecoder.DecoderState> {
 
